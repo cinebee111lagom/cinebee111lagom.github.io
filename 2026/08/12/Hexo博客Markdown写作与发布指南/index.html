@@ -19,24 +19,23 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
+    <meta name="description" content="本文介绍如何在本站用 Markdown 写文章，并通过 git push 自动发布。 新建文章在博客根目录执行： 1npx hexo new post &quot;文章标题&quot;  会在 source&#x2F;_posts&#x2F; 下生成 Markdown 文件，文件名即 URL 路径的一部分。 Front Matter 格式每篇文章开头需要 YAML 元数据： 123456789---title: 文章">
 <meta property="og:type" content="article">
-<meta property="og:title" content="多 GPU 并行调度与 NCCL 通信">
-<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/index.html">
+<meta property="og:title" content="Hexo 博客 Markdown 写作与发布指南">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/Hexo%E5%8D%9A%E5%AE%A2Markdown%E5%86%99%E4%BD%9C%E4%B8%8E%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
+<meta property="og:description" content="本文介绍如何在本站用 Markdown 写文章，并通过 git push 自动发布。 新建文章在博客根目录执行： 1npx hexo new post &quot;文章标题&quot;  会在 source&#x2F;_posts&#x2F; 下生成 Markdown 文件，文件名即 URL 路径的一部分。 Front Matter 格式每篇文章开头需要 YAML 元数据： 123456789---title: 文章">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T04:30:00.000Z">
+<meta property="article:published_time" content="2026-08-12T13:05:00.000Z">
 <meta property="article:modified_time" content="2026-08-12T13:04:31.931Z">
 <meta property="article:author" content="cinebee111lagom">
-<meta property="article:tag" content="GPU调度">
-<meta property="article:tag" content="NCCL">
-<meta property="article:tag" content="分布式">
+<meta property="article:tag" content="Hexo">
+<meta property="article:tag" content="Markdown">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>多 GPU 并行调度与 NCCL 通信 - cinebee111lagom</title>
+  <title>Hexo 博客 Markdown 写作与发布指南 - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -305,7 +304,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="多 GPU 并行调度与 NCCL 通信"></span>
+            <span id="subtitle" data-typed-text="Hexo 博客 Markdown 写作与发布指南"></span>
           
         </div>
 
@@ -316,8 +315,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-08-12 12:30" pubdate>
-          2026年8月12日 下午
+        <time datetime="2026-08-12 21:05" pubdate>
+          2026年8月12日 晚上
         </time>
       </span>
     
@@ -378,62 +377,80 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">多 GPU 并行调度与 NCCL 通信</h1>
+            <h1 id="seo-header">Hexo 博客 Markdown 写作与发布指南</h1>
             
             
               <div class="markdown-body">
                 
-                <p>单卡算力有限时，训练与大规模推理依赖<strong>多 GPU 并行</strong>。除「把任务放哪张卡」外，还要调度 <strong>卡间通信</strong>——这往往比计算本身更棘手。</p>
-<h2 id="并行范式"><a href="#并行范式" class="headerlink" title="并行范式"></a>并行范式</h2><table>
+                <p>本文介绍如何在本站用 Markdown 写文章，并通过 <code>git push</code> 自动发布。</p>
+<h2 id="新建文章"><a href="#新建文章" class="headerlink" title="新建文章"></a>新建文章</h2><p>在博客根目录执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">npx hexo new post <span class="hljs-string">&quot;文章标题&quot;</span><br></code></pre></td></tr></table></figure>
+
+<p>会在 <code>source/_posts/</code> 下生成 Markdown 文件，文件名即 URL 路径的一部分。</p>
+<h2 id="Front-Matter-格式"><a href="#Front-Matter-格式" class="headerlink" title="Front Matter 格式"></a>Front Matter 格式</h2><p>每篇文章开头需要 YAML 元数据：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> <span class="hljs-string">文章标题</span><br><span class="hljs-attr">date:</span> <span class="hljs-number">2026-08-12 21:00:00</span><br><span class="hljs-attr">tags:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">标签一</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">标签二</span><br><span class="hljs-attr">categories:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">分类名</span><br><span class="hljs-meta">---</span><br></code></pre></td></tr></table></figure>
+
+<p>正文写在 <code>---</code> 之后，支持标准 Markdown。</p>
+<h2 id="常用-Markdown-语法"><a href="#常用-Markdown-语法" class="headerlink" title="常用 Markdown 语法"></a>常用 Markdown 语法</h2><h3 id="标题"><a href="#标题" class="headerlink" title="标题"></a>标题</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs markdown"><span class="hljs-section">## 二级标题</span><br><span class="hljs-section">### 三级标题</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="代码块"><a href="#代码块" class="headerlink" title="代码块"></a>代码块</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">hello</span>():<br>    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Hello, blog!&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<h3 id="表格"><a href="#表格" class="headerlink" title="表格"></a>表格</h3><table>
 <thead>
 <tr>
-<th>范式</th>
-<th>切分维度</th>
-<th>通信模式</th>
+<th>列 A</th>
+<th>列 B</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>数据并行</td>
-<td>Batch</td>
-<td>AllReduce 梯度</td>
-</tr>
-<tr>
-<td>张量并行</td>
-<td>层内矩阵</td>
-<td>AllReduce &#x2F; AllGather</td>
-</tr>
-<tr>
-<td>流水线并行</td>
-<td>层间</td>
-<td>P2P 激活传递</td>
-</tr>
-<tr>
-<td>序列并行</td>
-<td>序列长度</td>
-<td>分片 Attention</td>
+<td>内容</td>
+<td>内容</td>
 </tr>
 </tbody></table>
-<p>现代大模型常 <strong>3D 并行</strong> 组合使用，调度器需同时感知拓扑与带宽。</p>
-<h2 id="NCCL-的角色"><a href="#NCCL-的角色" class="headerlink" title="NCCL 的角色"></a>NCCL 的角色</h2><p><strong>NCCL（NVIDIA Collective Communications Library）</strong> 在 GPU 间实现高效集合通信，自动选择：</p>
-<ul>
-<li>NVLink（同节点多卡，带宽 数百 GB&#x2F;s）</li>
-<li>PCIe（较慢，易成瓶颈）</li>
-<li>InfiniBand &#x2F; RoCE（跨节点）</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># PyTorch DDP 底层依赖 NCCL</span><br>torch.distributed.init_process_group(backend=<span class="hljs-string">&quot;nccl&quot;</span>)<br></code></pre></td></tr></table></figure>
+<h3 id="链接与图片"><a href="#链接与图片" class="headerlink" title="链接与图片"></a>链接与图片</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs markdown">[<span class="hljs-string">链接文字</span>](<span class="hljs-link">https://example.com</span>)<br>![<span class="hljs-string">图片描述</span>](<span class="hljs-link">/img/example.png</span>)<br></code></pre></td></tr></table></figure>
 
-<p>调度 implication：应把通信密集的阶段安排在 <strong>NVLink 全互联</strong> 的节点内，跨节点只做必要同步。</p>
-<h2 id="拓扑感知调度"><a href="#拓扑感知调度" class="headerlink" title="拓扑感知调度"></a>拓扑感知调度</h2><p>K8s 调度可结合节点 label：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">nodeAffinity:</span><br>  <span class="hljs-attr">requiredDuringSchedulingIgnoredDuringExecution:</span><br>    <span class="hljs-attr">nodeSelectorTerms:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">matchExpressions:</span><br>          <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">gpu-topology</span><br>            <span class="hljs-attr">operator:</span> <span class="hljs-string">In</span><br>            <span class="hljs-attr">values:</span> [<span class="hljs-string">&quot;nvlink-8&quot;</span>]<br></code></pre></td></tr></table></figure>
+<p>图片可放在 <code>source/img/</code> 目录，引用路径以 <code>/img/</code> 开头。</p>
+<h2 id="本地预览"><a href="#本地预览" class="headerlink" title="本地预览"></a>本地预览</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">npm run server<br></code></pre></td></tr></table></figure>
 
-<p>Slurm 的 <code>--gres=gpu:8</code> 配合 <code>CUDA_VISIBLE_DEVICES</code> 与拓扑检测脚本，是 HPC 侧常见做法。</p>
-<h2 id="视频分布式推理"><a href="#视频分布式推理" class="headerlink" title="视频分布式推理"></a>视频分布式推理</h2><p>多卡视频超分、实时拼接场景：</p>
-<ul>
-<li>按 <strong>时间片</strong> 或 <strong>空间块</strong> 分卡</li>
-<li>边界帧需要 halo exchange，通信量小于训练但仍需调度</li>
-<li>尾卡等待会导致帧率抖动——需静态分片 + 负载均衡</li>
-</ul>
-<p>多 GPU 调度 &#x3D; <strong>计算放置 + 通信编排</strong>，NCCL 是其中关键一环。</p>
+<p>浏览器打开 <a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000</a> 查看效果，改完即刷新。</p>
+<h2 id="发布到线上"><a href="#发布到线上" class="headerlink" title="发布到线上"></a>发布到线上</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">git add .<br>git commit -m <span class="hljs-string">&quot;更新文章：文章标题&quot;</span><br>git push<br></code></pre></td></tr></table></figure>
+
+<p>推送后 GitHub Actions 会自动构建 Hexo，并将静态页面部署到 <code>gh-pages</code> 分支。约 1 分钟后线上站点即更新。</p>
+<h2 id="写作建议"><a href="#写作建议" class="headerlink" title="写作建议"></a>写作建议</h2><ol>
+<li><strong>标题清晰</strong>：一句话说明文章价值</li>
+<li><strong>分段简短</strong>：每段 3–5 行，便于阅读</li>
+<li><strong>代码可运行</strong>：示例尽量完整、可复制</li>
+<li><strong>标签统一</strong>：同类文章用相同 tags，方便归档检索</li>
+</ol>
+<h2 id="本仓库路径速查"><a href="#本仓库路径速查" class="headerlink" title="本仓库路径速查"></a>本仓库路径速查</h2><table>
+<thead>
+<tr>
+<th>路径</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source/_posts/</code></td>
+<td>文章 Markdown</td>
+</tr>
+<tr>
+<td><code>source/img/</code></td>
+<td>图片资源</td>
+</tr>
+<tr>
+<td><code>source/about/</code></td>
+<td>关于页</td>
+</tr>
+<tr>
+<td><code>_config.yml</code></td>
+<td>站点全局配置</td>
+</tr>
+<tr>
+<td><code>_config.fluid.yml</code></td>
+<td>Fluid 主题配置</td>
+</tr>
+</tbody></table>
+<p>写好 Markdown、推送到 GitHub，就是本博客的完整发布流程。</p>
 
                 
               </div>
@@ -452,7 +469,7 @@
     
       <span class="category-chain">
         
-  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  <a href="/categories/%E5%8D%9A%E5%AE%A2%E8%BF%90%E7%BB%B4/" class="category-chain-item">博客运维</a>
   
   
 
@@ -467,11 +484,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
+        <a href="/tags/Hexo/" class="print-no-link">#Hexo</a>
       
-        <a href="/tags/NCCL/" class="print-no-link">#NCCL</a>
-      
-        <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" class="print-no-link">#分布式</a>
+        <a href="/tags/Markdown/" class="print-no-link">#Markdown</a>
       
     </div>
   
@@ -483,8 +498,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>多 GPU 并行调度与 NCCL 通信</div>
-      <div>https://cinebee111lagom.github.io/2026/08/12/多GPU并行调度与NCCL通信/</div>
+      <div>Hexo 博客 Markdown 写作与发布指南</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/Hexo博客Markdown写作与发布指南/</div>
     </div>
     <div class="license-meta">
       
@@ -528,18 +543,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2026/08/12/vGPU%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96GPU%E8%B0%83%E5%BA%A6/" title="vGPU 与虚拟化场景下的 GPU 调度">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">vGPU 与虚拟化场景下的 GPU 调度</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/" title="视频编解码中的 GPU 调度实践">
-                        <span class="hidden-mobile">视频编解码中的 GPU 调度实践</span>
+                      <a href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/" title="GPU 调度监控与性能调优实战">
+                        <span class="hidden-mobile">GPU 调度监控与性能调优实战</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
