@@ -17,7 +17,7 @@ npm run ui         # 打开 http://localhost:3456
 
 ```bash
 npm install
-npm run server   # 预览 http://localhost:4000
+npm run server   # 预览 http://localhost:8080
 npm run build    # 生成静态文件到 public/
 ```
 

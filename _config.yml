@@ -103,3 +103,8 @@ theme: fluid
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: ''
+
+# Local preview (avoid Windows excluded port ranges around 4000)
+server:
+  port: 8080
+  ip: 127.0.0.1
