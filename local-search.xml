@@ -4,6 +4,31 @@
   
   
   <entry>
+    <title>111</title>
+    <link href="/2026/08/12/111/"/>
+    <url>/2026/08/12/111/</url>
+    
+    <content type="html"><![CDATA[<p>这些图片是通信原理（信号与系统&#x2F;通信原理）考研或辅导资料中关于<strong>角度调制（FM&#x2F;PM）</strong>，以及<strong>包络检波器门限效应</strong>的章节内容。</p><p>从图片内容来看，涵盖了调相（PM）、调频（FM）的基本概念、单音调制分析、窄带调角、以及接收端噪声性能分析。因为您没有提出具体的问题，我先为您将这几页的核心知识点做一个梳理总结：</p><h3 id="1-调频（FM）与调相（PM）的数学关系与比较"><a href="#1-调频（FM）与调相（PM）的数学关系与比较" class="headerlink" title="1. 调频（FM）与调相（PM）的数学关系与比较"></a>1. 调频（FM）与调相（PM）的数学关系与比较</h3><ul><li><strong>本质区别</strong>：PM 的瞬时相位偏移与调制信号 (m(t)) 成正比；FM 的瞬时<strong>频率</strong>偏移与 (m(t)) 成正比，因此瞬时相位偏移是 (m(t)) 的<strong>积分</strong>。</li><li><strong>波形相似性</strong>：如笔记（65页）所述，单音调频和调相在波形上十分相似，都是正弦波。如果预先不知道调制信号 (m(t))，根本无法从波形上判定是 FM 还是 PM。</li><li><strong>相互转换</strong>：可以通过微分器和积分器在 FM 调制器和 PM 调制器之间相互转换（直接法和间接法，阿姆斯特朗法也是基于此）。</li></ul><h3 id="2-单音调制与关键参数"><a href="#2-单音调制与关键参数" class="headerlink" title="2. 单音调制与关键参数"></a>2. 单音调制与关键参数</h3><p>笔记详细推导了单音信号 (m(t) &#x3D; A_m \cos \omega_m t) 作为调制信号时，FM 和 PM 的表达式。</p><ul><li><strong>调频指数 (m_f)</strong>：(m_f &#x3D; \frac{K_{FM} A_m}{\omega_m} &#x3D; \frac{\Delta \omega_{FM}}{\omega_m} &#x3D; \frac{\Delta f_{FM}}{f_m})，代表最大相位偏移。</li><li><strong>调相指数 (m_p)</strong>：(m_p &#x3D; K_{PM} A_m &#x3D; \Delta \omega_{PM} &#x3D; \frac{\Delta f_{PM}}{f_m})，代表最大相位偏移。</li><li><strong>例题分析（66-67页 例11）</strong>：给定一个已调波表达式 (s_{角}(t))，让你根据已知的 (K_f) 或 (K_p) 反推出调制信号 (m(t))。<strong>通过求导（用于FM）或直接提取相位（用于PM）即可求解</strong>。</li></ul><h3 id="3-窄带角度调制（窄带调角）"><a href="#3-窄带角度调制（窄带调角）" class="headerlink" title="3. 窄带角度调制（窄带调角）"></a>3. 窄带角度调制（窄带调角）</h3><ul><li><strong>条件</strong>：当最大瞬时相位偏移满足 (|\varphi(t)| \ll 1) （通常指小于 0.5 rad 或 30°左右）时，称为窄带调角。</li><li><strong>近似</strong>：利用小角度近似 (\cos x \approx 1) 和 (\sin x \approx x)，推导出的窄带调相（NBFM&#x2F;NBPM）公式类似于 AM 信号。</li><li><strong>频域特征</strong>：窄带角度调制信号的频谱与 AM 信号相似，包含载波和两个边带。这也是实现宽带调频（WBFM）的<strong>阿姆斯特朗间接法</strong>的基础（先产生 NBFM，再通过倍频器扩展带宽）。</li></ul><h3 id="4-包络检波器的门限效应（62页）"><a href="#4-包络检波器的门限效应（62页）" class="headerlink" title="4. 包络检波器的门限效应（62页）"></a>4. 包络检波器的门限效应（62页）</h3><ul><li><strong>大信噪比</strong>：包络检波性能良好，信噪比增益近似等于相干解调，AM 最大信噪比增益为 2&#x2F;3。</li><li><strong>小信噪比（门限效应）</strong>：当输入信噪比很低时，包络检波器的输出信噪比<strong>急剧恶化</strong>（不再与输入信噪比成正比），信号会被淹埋在噪声中，这种现象称为<strong>门限效应</strong>。</li><li><strong>解决方法</strong>：采用**相干解调（同步检波）**可以避免门限效应。</li><li><strong>针对 DSB、SSB、VSB 的特别提示</strong>：这些抑制载波调幅信号的包络不直接代表调制信号，不能直接用包络检波。必须<strong>插入很强的载波</strong>，使其变成或近似 AM 信号，再用包络检波器解调（插入载波包络检波法）。</li></ul><hr><p><strong>如果您有具体的疑问，比如：</strong></p><ol><li>“怎么求例 11 里面 PM 和 FM 的调制信号？”</li><li>“窄带调角（NBFM&#x2F;NBPM）和 AM 信号在频谱上到底有什么区别？”</li><li>“门限效应具体怎么推导？”</li><li>或者对页面上某一行公式不太理解。</li></ol><p><strong>您可以告诉我，我会为您做针对性的详细讲解。</strong></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>11</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>111</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>GPU 调度监控与性能调优实战</title>
     <link href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/"/>
     <url>/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/</url>
