@@ -137,6 +137,18 @@ async function publish() {
   setStatus(data.message || '发布成功', 'ok');
 }
 
+async function parseJsonResponse(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (text.includes('Cannot DELETE')) {
+      throw new Error('写作台版本过旧，请 Ctrl+C 停止后重新运行 npm run ui');
+    }
+    throw new Error('服务器返回异常，请重启写作台');
+  }
+}
+
 async function deletePost() {
   if (!currentFilename) {
     setStatus('请先选择要删除的文章', 'error');
@@ -148,12 +160,18 @@ async function deletePost() {
   }
 
   setStatus('正在删除…');
-  const res = await fetch(`/api/posts/${encodeURIComponent(currentFilename)}`, {
-    method: 'DELETE',
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    setStatus(data.error || '删除失败', 'error');
+  let data;
+  try {
+    const res = await fetch(`/api/posts/${encodeURIComponent(currentFilename)}`, {
+      method: 'DELETE',
+    });
+    data = await parseJsonResponse(res);
+    if (!res.ok) {
+      setStatus(data.error || '删除失败', 'error');
+      return;
+    }
+  } catch (err) {
+    setStatus(err.message, 'error');
     return;
   }
 

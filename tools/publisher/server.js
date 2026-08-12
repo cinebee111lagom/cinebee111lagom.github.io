@@ -15,6 +15,15 @@ function safeFilename(name) {
   return name.replace(/[<>:"/\\|?*]/g, '').trim();
 }
 
+function resolvePostPath(filename) {
+  const name = safeFilename(filename);
+  if (!name.endsWith('.md')) return null;
+  const postsRoot = path.resolve(POSTS_DIR);
+  const full = path.resolve(postsRoot, name);
+  if (!full.startsWith(postsRoot + path.sep)) return null;
+  return full;
+}
+
 function listPosts() {
   if (!fs.existsSync(POSTS_DIR)) return [];
   return fs
@@ -146,22 +155,23 @@ app.put('/api/posts/:filename', (req, res) => {
 });
 
 app.delete('/api/posts/:filename', (req, res) => {
-  const filename = safeFilename(req.params.filename);
-  if (!filename.endsWith('.md')) {
-    return res.status(400).json({ error: '无效的文件名' });
+  try {
+    const full = resolvePostPath(req.params.filename);
+    if (!full || !fs.existsSync(full)) {
+      return res.status(404).json({ error: '文章不存在' });
+    }
+    const filename = path.basename(full);
+    fs.unlinkSync(full);
+    res.json({ ok: true, filename });
+  } catch (err) {
+    res.status(500).json({ error: '删除失败', detail: err.message });
   }
-  const full = path.join(POSTS_DIR, filename);
-  if (!full.startsWith(POSTS_DIR) || !fs.existsSync(full)) {
-    return res.status(404).json({ error: '文章不存在' });
-  }
-  fs.unlinkSync(full);
-  res.json({ ok: true, filename });
 });
 
 app.post('/api/publish', (req, res) => {
   const message = (req.body.message || '更新博客文章').trim();
   try {
-    runGit('git add source/_posts/');
+    runGit('git add -A -- source/_posts/');
     const status = runGit('git status --porcelain source/_posts/');
     if (!status.trim()) {
       return res.json({ ok: true, skipped: true, message: '没有需要发布的文章变更' });
