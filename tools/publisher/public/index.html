@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>博客写作台</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>博客写作台</h1>
+    <div class="topbar-actions">
+      <button type="button" id="btn-new" class="btn ghost">新建</button>
+      <button type="button" id="btn-save" class="btn primary">保存</button>
+      <button type="button" id="btn-publish" class="btn accent">发布到 GitHub</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-head">文章列表</div>
+      <ul id="post-list" class="post-list"></ul>
+    </aside>
+
+    <main class="editor">
+      <div class="form-row">
+        <label>标题</label>
+        <input id="title" type="text" placeholder="文章标题" />
+      </div>
+      <div class="form-row two-col">
+        <div>
+          <label>标签（逗号分隔）</label>
+          <input id="tags" type="text" placeholder="GPU调度, Hexo" />
+        </div>
+        <div>
+          <label>分类（逗号分隔）</label>
+          <input id="categories" type="text" placeholder="GPU调度" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>正文 Markdown</label>
+        <textarea id="body" placeholder="在这里写 Markdown 正文…"></textarea>
+      </div>
+      <div class="form-row">
+        <label>发布说明（commit message）</label>
+        <input id="commit-msg" type="text" placeholder="更新文章：标题" />
+      </div>
+      <div id="status" class="status"></div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
