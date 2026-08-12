@@ -70,13 +70,16 @@ function parseFrontMatter(raw) {
   return { meta, body: match[2] };
 }
 
-function buildFrontMatter({ title, date, tags, categories }) {
+function buildFrontMatter({ title, date, tags, categories, math }) {
   const tagItems = (tags || []).filter(Boolean);
   const catItems = (categories || []).filter(Boolean);
 
   let yaml = `---\n`;
   yaml += `title: ${title}\n`;
   yaml += `date: ${date}\n`;
+  if (math) {
+    yaml += `math: true\n`;
+  }
   yaml += `tags:\n`;
   if (tagItems.length) {
     yaml += tagItems.map((t) => `  - ${t}`).join('\n') + '\n';
@@ -93,6 +96,10 @@ function formatDate() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function detectMath(body) {
+  return /\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/.test(body || '');
 }
 
 function runGit(cmd) {
@@ -125,7 +132,7 @@ app.post('/api/posts', (req, res) => {
     return res.status(409).json({ error: '文件已存在，请换标题或指定文件名' });
   }
   const date = req.body.date || formatDate();
-  const content = buildFrontMatter({ title, date, tags, categories }) + '\n' + body.trim() + '\n';
+  const content = buildFrontMatter({ title, date, tags, categories, math: req.body.math ?? detectMath(body) }) + '\n' + body.trim() + '\n';
   fs.writeFileSync(full, content, 'utf8');
   res.json({ ok: true, filename });
 });
@@ -146,6 +153,7 @@ app.put('/api/posts/:filename', (req, res) => {
       date: date || formatDate(),
       tags,
       categories,
+      math: req.body.math ?? detectMath(body),
     }) +
     '\n' +
     body.trim() +

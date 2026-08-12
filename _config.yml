@@ -104,6 +104,11 @@ theme: fluid
 deploy:
   type: ''
 
+# Markdown 渲染（KaTeX 公式支持，配合 Fluid 主题 post.math）
+markdown:
+  plugins:
+    - "@traptitech/markdown-it-katex"
+
 # Local preview (avoid Windows excluded port ranges around 4000)
 server:
   port: 8080
