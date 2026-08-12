@@ -16,5 +16,312 @@
   
   
   
+  <entry>
+    <title>GPU 调度监控与性能调优实战</title>
+    <link href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/"/>
+    <url>/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/</url>
+    
+    <content type="html"><![CDATA[<p>没有可观测性，调度策略就是盲人摸象。生产环境需要 <strong>指标、追踪、告警</strong> 闭环，持续验证调度是否有效。</p><h2 id="核心监控指标"><a href="#核心监控指标" class="headerlink" title="核心监控指标"></a>核心监控指标</h2><h3 id="利用率维度"><a href="#利用率维度" class="headerlink" title="利用率维度"></a>利用率维度</h3><ul><li><code>DCGM_FI_DEV_GPU_UTIL</code>：SM 利用率</li><li><code>DCGM_FI_PROF_GR_ENGINE_ACTIVE</code>：图形&#x2F;计算引擎活跃比</li><li>NVENC&#x2F;NVDEC 利用率（视频必备）</li></ul><h3 id="显存维度"><a href="#显存维度" class="headerlink" title="显存维度"></a>显存维度</h3><ul><li><code>DCGM_FI_DEV_FB_USED / FREE</code></li><li>按进程 &#x2F; Pod 的显存归因（<code>nvidia-smi pmon</code>）</li></ul><h3 id="调度健康度"><a href="#调度健康度" class="headerlink" title="调度健康度"></a>调度健康度</h3><ul><li>Pod <strong>Pending 时长</strong></li><li>队列 <strong>积压长度</strong></li><li>GPU <strong>分配率 vs 实际利用率</strong>（识别「占卡不用」）</li></ul><h2 id="工具栈推荐"><a href="#工具栈推荐" class="headerlink" title="工具栈推荐"></a>工具栈推荐</h2><table><thead><tr><th>工具</th><th>用途</th></tr></thead><tbody><tr><td>DCGM Exporter + Prometheus</td><td>集群指标</td></tr><tr><td>Grafana Dashboard</td><td>可视化</td></tr><tr><td>Nsight Systems</td><td>单任务时间线</td></tr><tr><td>Nsight Compute</td><td>Kernel 级分析</td></tr><tr><td>eBPF &#x2F; GPU telemetry</td><td>低开销持续采样</td></tr></tbody></table><h2 id="常见调优路径"><a href="#常见调优路径" class="headerlink" title="常见调优路径"></a>常见调优路径</h2><h3 id="现象：利用率低、延迟高"><a href="#现象：利用率低、延迟高" class="headerlink" title="现象：利用率低、延迟高"></a>现象：利用率低、延迟高</h3><ul><li>检查是否默认 Stream 导致串行</li><li>检查 PCIe 是否瓶颈（小 kernel 频繁传数据）</li><li>视频场景：是否没用 NVENC 而走软编</li></ul><h3 id="现象：多任务-OOM"><a href="#现象：多任务-OOM" class="headerlink" title="现象：多任务 OOM"></a>现象：多任务 OOM</h3><ul><li>启用 MIG 或限制并发 Slot</li><li>训练侧：Gradient Checkpointing &#x2F; ZeRO</li></ul><h3 id="现象：P99-延迟抖动"><a href="#现象：P99-延迟抖动" class="headerlink" title="现象：P99 延迟抖动"></a>现象：P99 延迟抖动</h3><ul><li>避免 MPS 混部延迟敏感任务</li><li>隔离 NVENC 路与训练任务到不同卡</li></ul><h2 id="告警规则示例"><a href="#告警规则示例" class="headerlink" title="告警规则示例"></a>告警规则示例</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># Prometheus 示例</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">alert:</span> <span class="hljs-string">GpuMemoryNearFull</span><br>  <span class="hljs-attr">expr:</span> <span class="hljs-string">DCGM_FI_DEV_FB_USED</span> <span class="hljs-string">/</span> <span class="hljs-string">DCGM_FI_DEV_FB_TOTAL</span> <span class="hljs-string">&gt;</span> <span class="hljs-number">0.9</span><br>  <span class="hljs-attr">for:</span> <span class="hljs-string">5m</span><br><br><span class="hljs-bullet">-</span> <span class="hljs-attr">alert:</span> <span class="hljs-string">GpuUtilizationLowWhileQueueHigh</span><br>  <span class="hljs-attr">expr:</span> <span class="hljs-string">queue_depth</span> <span class="hljs-string">&gt;</span> <span class="hljs-number">100</span> <span class="hljs-string">and</span> <span class="hljs-string">avg_gpu_util</span> <span class="hljs-string">&lt;</span> <span class="hljs-number">0.3</span><br>  <span class="hljs-attr">for:</span> <span class="hljs-string">10m</span><br></code></pre></td></tr></table></figure><p>第二条直指 <strong>调度失效</strong>：队列堆积但卡闲着，说明分配策略或 Slot 配置有问题。</p><h2 id="闭环优化流程"><a href="#闭环优化流程" class="headerlink" title="闭环优化流程"></a>闭环优化流程</h2><ol><li>压测得出单卡 <strong>安全并发路数 &#x2F; 显存曲线</strong></li><li>写入调度器配置（MIG profile、Queue quota）</li><li>上线监控与告警</li><li>每周复盘：利用率、SLA、成本三角</li></ol><p>GPU 调度不是一次配置永久有效——新模型、新 codec、新硬件都会改变最优策略。持续监控才是调优的起点。</p><hr><p>以上十篇覆盖了从 CUDA Stream 到集群调度、从视频转码到训练显存的 GPU 调度全景。建议按入门 → 单卡 → 集群 → 场景 → 运维的顺序阅读。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>监控</tag>
+      
+      <tag>调优</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>GPU 集群作业调度：Slurm 与 Volcano</title>
+    <link href="/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/"/>
+    <url>/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/</url>
+    
+    <content type="html"><![CDATA[<p>单机 GPU 调度之上，是<strong>集群级作业调度</strong>：谁先拿卡、拿几张、能否抢占。HPC 与 AI 平台各有成熟方案。</p><h2 id="Slurm（HPC-传统）"><a href="#Slurm（HPC-传统）" class="headerlink" title="Slurm（HPC 传统）"></a>Slurm（HPC 传统）</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">sbatch --gres=gpu:4 --partition=ai train.sh<br></code></pre></td></tr></table></figure><p>Slurm 特性：</p><ul><li><strong>Partition</strong> 队列：开发 &#x2F; 生产 &#x2F; 紧急</li><li><strong>Fair-share</strong>：历史用量影响优先级</li><li><strong>Gang Scheduling</strong>：<code>--nodes=2 --ntasks-per-node=4</code> 全齐才启动</li><li>与 <strong>MPI + NCCL</strong> 深度集成</li></ul><p>适合超算中心、固定团队共享集群。</p><h2 id="Volcano（云原生-AI）"><a href="#Volcano（云原生-AI）" class="headerlink" title="Volcano（云原生 AI）"></a>Volcano（云原生 AI）</h2><p>Volcano 为 K8s 设计，核心 CRD：</p><ul><li><strong>Queue</strong>：资源配额与优先级</li><li><strong>PodGroup</strong>：组调度语义</li><li><strong>Job</strong>：批任务生命周期</li></ul><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">batch.volcano.sh/v1alpha1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Job</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">minAvailable:</span> <span class="hljs-number">4</span><br>  <span class="hljs-attr">tasks:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">replicas:</span> <span class="hljs-number">4</span><br>      <span class="hljs-attr">template:</span><br>        <span class="hljs-attr">spec:</span><br>          <span class="hljs-attr">containers:</span><br>            <span class="hljs-bullet">-</span> <span class="hljs-attr">resources:</span><br>                <span class="hljs-attr">limits:</span><br>                  <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-number">1</span><br></code></pre></td></tr></table></figure><p>适合弹性伸缩、与 CI&#x2F;CD 集成的 MLOps 流程。</p><h2 id="调度策略对比"><a href="#调度策略对比" class="headerlink" title="调度策略对比"></a>调度策略对比</h2><table><thead><tr><th>能力</th><th>Slurm</th><th>Volcano</th></tr></thead><tbody><tr><td>生态</td><td>HPC 成熟</td><td>K8s 原生</td></tr><tr><td>弹性</td><td>弱</td><td>强</td></tr><tr><td>抢占</td><td>支持</td><td>支持</td></tr><tr><td>队列公平</td><td>Fair-share</td><td>Queue + Priority</td></tr><tr><td>视频批处理</td><td>批脚本</td><td>CronJob + Queue</td></tr></tbody></table><h2 id="视频批转码队列设计"><a href="#视频批转码队列设计" class="headerlink" title="视频批转码队列设计"></a>视频批转码队列设计</h2><p>建议：</p><ol><li>短视频（&lt;5min）与高优先级 Job 进 <strong>express queue</strong></li><li>4K 长片进 <strong>batch queue</strong>，夜间低价时段跑</li><li>设置 <strong>GPU 利用率回填</strong>：小任务塞进空闲 Slot</li></ol><p>集群调度器是 GPU 资源的「交通警察」——规则清晰，才能避免大 Job 饿死小 Job，或测试任务占卡不还。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>Slurm</tag>
+      
+      <tag>Volcano</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>vGPU 与虚拟化场景下的 GPU 调度</title>
+    <link href="/2026/08/12/vGPU%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96GPU%E8%B0%83%E5%BA%A6/"/>
+    <url>/2026/08/12/vGPU%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96GPU%E8%B0%83%E5%BA%A6/</url>
+    
+    <content type="html"><![CDATA[<p>在虚拟桌面、云游戏、多租户 GPU 云里，<strong>vGPU</strong> 把物理 GPU 抽象成多个虚拟 GPU 分配给不同虚拟机，调度发生在 Hypervisor 层。</p><h2 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h2><p>NVIDIA 虚拟 GPU 方案：</p><ul><li><strong>vGPU</strong>：时间片或固定 profile（如 <code>NVIDIA A10-4Q</code>）</li><li><strong>vComputeServer</strong>：面向计算 VM</li><li><strong>GRID &#x2F; RTX vWS</strong>：图形与云桌面</li></ul><p>调度由 <strong>NVIDIA vGPU Manager</strong> 在宿主机完成，对 Guest 呈现为标准 GPU。</p><h2 id="Profile-与-QoS"><a href="#Profile-与-QoS" class="headerlink" title="Profile 与 QoS"></a>Profile 与 QoS</h2><p>每个 vGPU profile 定义：</p><ul><li>framebuffer（显存上限）</li><li>最大显示器数 &#x2F; 编解码会话数</li><li>时间片权重（共享物理 GPU 时）</li></ul><p>云游戏调度示例：高付费用户绑定更高权重 profile，保证 60fps；免费用户降级 profile 或排队。</p><h2 id="与容器调度的关系"><a href="#与容器调度的关系" class="headerlink" title="与容器调度的关系"></a>与容器调度的关系</h2><p>K8s 裸金属 GPU 调度与 VM vGPU 调度可共存于同一数据中心：</p><ul><li><strong>训练集群</strong>：裸金属 + MIG</li><li><strong>VDI &#x2F; 云游戏</strong>：虚拟化 + vGPU</li><li><strong>边缘推理</strong>：整卡或轻量容器</li></ul><p>统一资源池需要上层 <strong>容量管理平台</strong> 做跨池调度，避免 vGPU 池空闲而裸金属池排队。</p><h2 id="视频场景"><a href="#视频场景" class="headerlink" title="视频场景"></a>视频场景</h2><ul><li><strong>云剪辑</strong>：每 VM 一路 NVENC，profile 限制最大会话</li><li><strong>远程渲染</strong>：vGPU 图形时间片影响帧率稳定性</li><li><strong>直播推流 VM</strong>：需预留编码引擎配额，不能仅看 SM 利用率</li></ul><p>vGPU 调度牺牲部分裸金属性能，换来 <strong>强租户隔离与 VM 级 SLA</strong>——金融、政企客户常见需求。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>vGPU</tag>
+      
+      <tag>虚拟化</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>多 GPU 并行调度与 NCCL 通信</title>
+    <link href="/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/"/>
+    <url>/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/</url>
+    
+    <content type="html"><![CDATA[<p>单卡算力有限时，训练与大规模推理依赖<strong>多 GPU 并行</strong>。除「把任务放哪张卡」外，还要调度 <strong>卡间通信</strong>——这往往比计算本身更棘手。</p><h2 id="并行范式"><a href="#并行范式" class="headerlink" title="并行范式"></a>并行范式</h2><table><thead><tr><th>范式</th><th>切分维度</th><th>通信模式</th></tr></thead><tbody><tr><td>数据并行</td><td>Batch</td><td>AllReduce 梯度</td></tr><tr><td>张量并行</td><td>层内矩阵</td><td>AllReduce &#x2F; AllGather</td></tr><tr><td>流水线并行</td><td>层间</td><td>P2P 激活传递</td></tr><tr><td>序列并行</td><td>序列长度</td><td>分片 Attention</td></tr></tbody></table><p>现代大模型常 <strong>3D 并行</strong> 组合使用，调度器需同时感知拓扑与带宽。</p><h2 id="NCCL-的角色"><a href="#NCCL-的角色" class="headerlink" title="NCCL 的角色"></a>NCCL 的角色</h2><p><strong>NCCL（NVIDIA Collective Communications Library）</strong> 在 GPU 间实现高效集合通信，自动选择：</p><ul><li>NVLink（同节点多卡，带宽 数百 GB&#x2F;s）</li><li>PCIe（较慢，易成瓶颈）</li><li>InfiniBand &#x2F; RoCE（跨节点）</li></ul><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># PyTorch DDP 底层依赖 NCCL</span><br>torch.distributed.init_process_group(backend=<span class="hljs-string">&quot;nccl&quot;</span>)<br></code></pre></td></tr></table></figure><p>调度 implication：应把通信密集的阶段安排在 <strong>NVLink 全互联</strong> 的节点内，跨节点只做必要同步。</p><h2 id="拓扑感知调度"><a href="#拓扑感知调度" class="headerlink" title="拓扑感知调度"></a>拓扑感知调度</h2><p>K8s 调度可结合节点 label：</p><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">nodeAffinity:</span><br>  <span class="hljs-attr">requiredDuringSchedulingIgnoredDuringExecution:</span><br>    <span class="hljs-attr">nodeSelectorTerms:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">matchExpressions:</span><br>          <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">gpu-topology</span><br>            <span class="hljs-attr">operator:</span> <span class="hljs-string">In</span><br>            <span class="hljs-attr">values:</span> [<span class="hljs-string">&quot;nvlink-8&quot;</span>]<br></code></pre></td></tr></table></figure><p>Slurm 的 <code>--gres=gpu:8</code> 配合 <code>CUDA_VISIBLE_DEVICES</code> 与拓扑检测脚本，是 HPC 侧常见做法。</p><h2 id="视频分布式推理"><a href="#视频分布式推理" class="headerlink" title="视频分布式推理"></a>视频分布式推理</h2><p>多卡视频超分、实时拼接场景：</p><ul><li>按 <strong>时间片</strong> 或 <strong>空间块</strong> 分卡</li><li>边界帧需要 halo exchange，通信量小于训练但仍需调度</li><li>尾卡等待会导致帧率抖动——需静态分片 + 负载均衡</li></ul><p>多 GPU 调度 &#x3D; <strong>计算放置 + 通信编排</strong>，NCCL 是其中关键一环。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>NCCL</tag>
+      
+      <tag>分布式</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>视频编解码中的 GPU 调度实践</title>
+    <link href="/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/"/>
+    <url>/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/</url>
+    
+    <content type="html"><![CDATA[<p>视频业务是 GPU 调度的高频场景：解码、滤镜、缩放、编码全在卡上完成。调度设计直接决定<strong>路数、延迟与电费</strong>。</p><h2 id="硬件编解码单元"><a href="#硬件编解码单元" class="headerlink" title="硬件编解码单元"></a>硬件编解码单元</h2><p>NVIDIA GPU 除 CUDA Core 外，还有专用 <strong>NVDEC &#x2F; NVENC</strong> 引擎。它们与 SM 独立，可并行工作：</p><figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dart">CPU 读盘 → NVDEC 解码 → CUDA <span class="hljs-title class_">Kernel</span> 处理 → NVENC 编码 → 输出<br></code></pre></td></tr></table></figure><p>调度要点是让 NVDEC、SM、NVENC <strong>流水线重叠</strong>，而非串行等待。</p><h2 id="多路转码调度模型"><a href="#多路转码调度模型" class="headerlink" title="多路转码调度模型"></a>多路转码调度模型</h2><p>典型转码服务架构：</p><ol><li><strong>任务队列</strong>（Redis &#x2F; Kafka）接收转码 Job</li><li><strong>Worker</strong> 从队列拉任务，绑定 GPU 设备</li><li>每 GPU 维护 <strong>Slot 池</strong>（如 MIG 实例或固定路数）</li></ol><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 概念示意：每卡最多 concurrent_slots 路</span><br><span class="hljs-keyword">with</span> gpu_slot.acquire(gpu_id):<br>    pipeline.run(input_path, output_path)<br></code></pre></td></tr></table></figure><p>Slot 数量由压测得出：1080p H.265 → NVENC 约 5–8 路&#x2F;卡（视代际与 preset 而定）。</p><h2 id="帧级-vs-任务级调度"><a href="#帧级-vs-任务级调度" class="headerlink" title="帧级 vs 任务级调度"></a>帧级 vs 任务级调度</h2><table><thead><tr><th>粒度</th><th>说明</th><th>适用</th></tr></thead><tbody><tr><td>任务级</td><td>一路视频占一个 Slot 直到结束</td><td>点播转码</td></tr><tr><td>帧级</td><td>多路帧交错进同一 Pipeline</td><td>超低延迟直播</td></tr></tbody></table><p>帧级调度复杂度高，需无锁环形缓冲与精细的 Stream 同步，但可把 NVENC 利用率推到 90%+。</p><h2 id="与-CPU-的协同"><a href="#与-CPU-的协同" class="headerlink" title="与 CPU 的协同"></a>与 CPU 的协同</h2><p>并非所有滤镜都适合 GPU。轻量 OSD、元数据解析留 CPU；重滤镜（AI 超分、降噪）上 GPU。调度器应避免 <strong>CPU 等 GPU、GPU 等 CPU</strong> 的互相阻塞——用异步回调和双缓冲缓解。</p><h2 id="监控指标"><a href="#监控指标" class="headerlink" title="监控指标"></a>监控指标</h2><ul><li>每路 <strong>FPS &#x2F; 实际倍速</strong></li><li>NVENC&#x2F;NVDEC <strong>利用率</strong>（非 SM 利用率）</li><li><strong>PCIe 带宽</strong>（4K RAW 上卡是隐形瓶颈）</li><li>队列 <strong>等待时间</strong>（调度是否饥饿）</li></ul><p>视频场景是检验 GPU 调度成色的试金石：算力、专用引擎、IO 三者必须协同。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>视频</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>GPU 时间片调度 vs 空间分区调度</title>
+    <link href="/2026/08/12/GPU%E6%97%B6%E9%97%B4%E7%89%87%E8%B0%83%E5%BA%A6%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%88%86%E5%8C%BA%E5%AF%B9%E6%AF%94/"/>
+    <url>/2026/08/12/GPU%E6%97%B6%E9%97%B4%E7%89%87%E8%B0%83%E5%BA%A6%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%88%86%E5%8C%BA%E5%AF%B9%E6%AF%94/</url>
+    
+    <content type="html"><![CDATA[<p>GPU 多任务共享有两种经典思路：<strong>时间片</strong>（轮流用整卡）和<strong>空间分区</strong>（切分硬件资源）。选型直接影响延迟、隔离与利用率。</p><h2 id="时间片调度"><a href="#时间片调度" class="headerlink" title="时间片调度"></a>时间片调度</h2><p>多个任务交替使用同一张 GPU 的全部资源。类似 CPU 时间片，但 GPU 上下文切换成本更高：</p><ul><li>CUDA Context 切换涉及显存映射、TLB 刷新</li><li>切换间隙 SM 空闲，算力浪费</li><li>不适合硬实时推理</li></ul><p><strong>CUDA MPS（Multi-Process Service）</strong> 允许多进程共享同一 Context，减少切换开销，但<strong>无显存隔离</strong>——一进程 OOM 可拖垮全部。</p><p>适用：开发调试、轻量多进程推理、批处理吞吐优先场景。</p><h2 id="空间分区调度"><a href="#空间分区调度" class="headerlink" title="空间分区调度"></a>空间分区调度</h2><p>将 GPU 物理或逻辑切分为多个单元，各任务绑定不同单元：</p><ul><li><strong>MIG</strong>：硬件分区，强隔离</li><li><strong>vGPU</strong>（虚拟化）：Hypervisor 层切分，适合 VDI、云桌面</li><li><strong>显存 cgroup 限额</strong>（部分驱动实验特性）：软限制</li></ul><p>适用：多租户 SaaS、SLA 敏感的在线推理、视频转码混部。</p><h2 id="对比表"><a href="#对比表" class="headerlink" title="对比表"></a>对比表</h2><table><thead><tr><th>指标</th><th>时间片 &#x2F; MPS</th><th>空间分区 &#x2F; MIG</th></tr></thead><tbody><tr><td>隔离性</td><td>弱</td><td>强</td></tr><tr><td>切换开销</td><td>中–高</td><td>低（实例内无切换）</td></tr><tr><td>资源利用率</td><td>高（弹性共享）</td><td>中（静态切片可能浪费）</td></tr><tr><td>配置复杂度</td><td>低</td><td>高</td></tr><tr><td>尾延迟</td><td>波动大</td><td>稳定</td></tr></tbody></table><h2 id="视频业务怎么选"><a href="#视频业务怎么选" class="headerlink" title="视频业务怎么选"></a>视频业务怎么选</h2><ul><li><strong>离线批转码</strong>：时间片 + 多 Stream 即可，追求吞吐</li><li><strong>直播转码 &#x2F; 低延迟点播</strong>：MIG 或独立整卡，保证 P99 延迟</li><li><strong>预览缩略图生成</strong>（低优先级）：可与训练任务时间片混部，配合 K8s PriorityClass</li></ul><p>没有银弹：很多生产集群采用 <strong>两层调度</strong>——集群层 MIG&#x2F;整卡分配，进程层 Stream 流水线优化。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>架构</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>深度学习训练中的 GPU 显存调度</title>
+    <link href="/2026/08/12/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%AE%AD%E7%BB%83%E4%B8%AD%E7%9A%84GPU%E6%98%BE%E5%AD%98%E8%B0%83%E5%BA%A6/"/>
+    <url>/2026/08/12/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%AE%AD%E7%BB%83%E4%B8%AD%E7%9A%84GPU%E6%98%BE%E5%AD%98%E8%B0%83%E5%BA%A6/</url>
+    
+    <content type="html"><![CDATA[<p>显存是 GPU 上最稀缺的资源之一。大模型训练中，<strong>显存调度</strong>往往比算力调度更早成为瓶颈。</p><h2 id="显存占用构成"><a href="#显存占用构成" class="headerlink" title="显存占用构成"></a>显存占用构成</h2><p>一次训练迭代的显存大致包括：</p><ol><li><strong>模型参数</strong>（权重）</li><li><strong>梯度</strong></li><li><strong>优化器状态</strong>（如 Adam 的 m、v）</li><li><strong>激活值</strong>（与 batch size、序列长度正相关）</li></ol><p>7B 参数模型在 FP16 下权重约 14GB，加上优化器与激活，单卡 24GB 往往不够——这驱动了各类显存调度技术。</p><h2 id="软件层调度手段"><a href="#软件层调度手段" class="headerlink" title="软件层调度手段"></a>软件层调度手段</h2><h3 id="梯度累积"><a href="#梯度累积" class="headerlink" title="梯度累积"></a>梯度累积</h3><p>小 batch 多次前向再统一反向，等效大 batch，降低峰值激活显存。</p><h3 id="混合精度（AMP）"><a href="#混合精度（AMP）" class="headerlink" title="混合精度（AMP）"></a>混合精度（AMP）</h3><p>FP16&#x2F;BF16 计算 + FP32 主权重，显存与带宽双省。</p><h3 id="激活重计算（Gradient-Checkpointing）"><a href="#激活重计算（Gradient-Checkpointing）" class="headerlink" title="激活重计算（Gradient Checkpointing）"></a>激活重计算（Gradient Checkpointing）</h3><p>牺牲约 20% 计算，换 50%+ 激活显存节省。</p><h3 id="ZeRO-FSDP"><a href="#ZeRO-FSDP" class="headerlink" title="ZeRO &#x2F; FSDP"></a>ZeRO &#x2F; FSDP</h3><p>将优化器状态、梯度、参数分片到多卡，<strong>跨卡调度显存</strong>：</p><ul><li>ZeRO-1：分片优化器状态</li><li>ZeRO-2：+ 梯度</li><li>ZeRO-3：+ 参数</li></ul><p>DeepSpeed、PyTorch FSDP 在框架层实现这类调度，对上层仍是「一个训练 Job」，对集群则是多卡协同调度。</p><h2 id="与视频生成的交叉"><a href="#与视频生成的交叉" class="headerlink" title="与视频生成的交叉"></a>与视频生成的交叉</h2><p>文生视频、图生视频模型（如扩散模型视频版）显存需求极高：时空维度同时膨胀。实践上常组合：</p><ul><li>序列并行 &#x2F; 上下文并行</li><li>VAE 编码与扩散去噪分卡</li><li>CPU offload 部分权重</li></ul><p>这类 pipeline 调度本质是<strong>阶段式显存预算</strong>：每个阶段只加载当前需要的子模块。</p><h2 id="调度器视角"><a href="#调度器视角" class="headerlink" title="调度器视角"></a>调度器视角</h2><p>集群调度器除分配 GPU 数量外，还应感知 <strong>每卡显存需求</strong>。Volcano 的 <code>nvidia.com/gpu.memory</code> 扩展资源、以及部分云厂商的「显存型」实例 SKU，都是显存调度产品化的体现。</p><p>显存调度得当，同等硬件可多跑 2–3 倍实验并发——对研发效率影响巨大。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>深度学习</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>NVIDIA MIG：多实例 GPU 的空间分区调度</title>
+    <link href="/2026/08/12/NVIDIA-MIG-%E5%A4%9A%E5%AE%9E%E4%BE%8BGPU%E8%B0%83%E5%BA%A6/"/>
+    <url>/2026/08/12/NVIDIA-MIG-%E5%A4%9A%E5%AE%9E%E4%BE%8BGPU%E8%B0%83%E5%BA%A6/</url>
+    
+    <content type="html"><![CDATA[<p><strong>MIG（Multi-Instance GPU）</strong> 允许将一块 A100&#x2F;H100 物理切分为多个独立 GPU 实例。每个实例拥有专属的显存、L2 缓存份额和计算核心，<strong>硬件级隔离</strong>，适合多租户云场景。</p><h2 id="MIG-实例规格"><a href="#MIG-实例规格" class="headerlink" title="MIG 实例规格"></a>MIG 实例规格</h2><p>以 A100 80GB 为例，可配置为：</p><ul><li>7 × <code>1g.10gb</code></li><li>3 × <code>2g.20gb</code></li><li>2 × <code>3g.40gb</code></li><li>1 × <code>7g.80gb</code></li></ul><p>规格在重启前固定，变更需要重置 GPU（<code>nvidia-smi mig -dci</code> 等操作）。</p><h2 id="调度链路"><a href="#调度链路" class="headerlink" title="调度链路"></a>调度链路</h2><figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs dart">管理员配置 MIG 拓扑 → <span class="hljs-title class_">Device</span> <span class="hljs-title class_">Plugin</span> 暴露 nvidia.com/mig-1g.10gb 等资源<br>                    → <span class="hljs-title class_">Pod</span> 请求特定 MIG 规格<br>                    → 容器内看到独立 GPU 设备（如 UUID 后缀带 MIG 标识）<br></code></pre></td></tr></table></figure><p>K8s 侧需使用支持 MIG 的 Device Plugin 版本，并在节点打 label 标明可用 MIG profile。</p><h2 id="与整卡调度的对比"><a href="#与整卡调度的对比" class="headerlink" title="与整卡调度的对比"></a>与整卡调度的对比</h2><table><thead><tr><th>方式</th><th>隔离性</th><th>灵活性</th><th>适用场景</th></tr></thead><tbody><tr><td>整卡</td><td>强</td><td>低</td><td>大模型训练</td></tr><tr><td>MIG</td><td>硬件强</td><td>中（静态分区）</td><td>推理多租户</td></tr><tr><td>MPS</td><td>弱</td><td>高</td><td>同进程族共享 SM</td></tr><tr><td>时间片</td><td>弱</td><td>高</td><td>开发测试</td></tr></tbody></table><h2 id="视频转码场景"><a href="#视频转码场景" class="headerlink" title="视频转码场景"></a>视频转码场景</h2><p>一路 1080p H.265 实时转码约占用 1–2GB 显存和固定算力。在 A100 上切出多个 <code>1g.10gb</code> 实例，可让 <strong>6–7 路转码任务硬隔离</strong>，互不影响尾延迟——比多进程抢一张整卡更可控。</p><h2 id="监控注意点"><a href="#监控注意点" class="headerlink" title="监控注意点"></a>监控注意点</h2><p>DCGM 可分别采集每个 MIG 实例的利用率。运维时应按 <strong>MIG UUID</strong> 而非物理卡 UUID 做告警，避免误判「整卡空闲」而实际某实例已打满。</p><p>MIG 是空间分区调度的代表方案；若需要更细粒度或跨卡调度，还需结合 K8s 二次调度器与业务层队列。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>MIG</tag>
+      
+      <tag>NVIDIA</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Kubernetes GPU 调度与 NVIDIA Device Plugin</title>
+    <link href="/2026/08/12/Kubernetes-GPU%E8%B0%83%E5%BA%A6%E4%B8%8EDevice-Plugin/"/>
+    <url>/2026/08/12/Kubernetes-GPU%E8%B0%83%E5%BA%A6%E4%B8%8EDevice-Plugin/</url>
+    
+    <content type="html"><![CDATA[<p>在 K8s 集群里调度 GPU，本质是让调度器「认识」GPU 这种异构资源，并在 Pod 启动时把正确的设备句柄注入容器。</p><h2 id="资源模型"><a href="#资源模型" class="headerlink" title="资源模型"></a>资源模型</h2><p>K8s 通过 Extended Resource 暴露 GPU：</p><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">resources:</span><br>  <span class="hljs-attr">limits:</span><br>    <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-number">1</span><br></code></pre></td></tr></table></figure><p>节点上必须运行 <strong>NVIDIA Device Plugin</strong>，它负责：</p><ol><li>调用 <code>nvidia-smi</code> &#x2F; NVML 枚举 GPU</li><li>向 kubelet 注册 <code>nvidia.com/gpu</code> 资源容量</li><li>Pod 绑定时，将 <code>NVIDIA_VISIBLE_DEVICES</code> 等环境变量写入容器</li></ol><h2 id="调度流程"><a href="#调度流程" class="headerlink" title="调度流程"></a>调度流程</h2><figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs dart"><span class="hljs-title class_">Pending</span> <span class="hljs-title class_">Pod</span> → kube-scheduler 过滤/打分有 GPU 的节点<br>           → 绑定 <span class="hljs-title class_">Node</span><br>           → kubelet 创建设备 → <span class="hljs-title class_">Device</span> <span class="hljs-title class_">Plugin</span> <span class="hljs-title class_">Allocate</span>()<br>           → 容器内可见指定 GPU<br></code></pre></td></tr></table></figure><p>默认调度器按「整卡」分配。一张 A100 即使只用了 2GB 显存，也会被标记为整卡占用——这是<strong>粗粒度调度</strong>的典型痛点。</p><h2 id="GPU-Operator-的角色"><a href="#GPU-Operator-的角色" class="headerlink" title="GPU Operator 的角色"></a>GPU Operator 的角色</h2><p>NVIDIA GPU Operator 一站式部署：</p><ul><li>Device Plugin</li><li>DCGM Exporter（监控）</li><li>MIG Manager（可选）</li><li>Container Runtime 配置（<code>nvidia</code> runtime class）</li></ul><p>生产集群建议通过 Operator 而非手工装插件，减少驱动版本与容器运行时不匹配的风险。</p><h2 id="与-Volcano-Kueue-的配合"><a href="#与-Volcano-Kueue-的配合" class="headerlink" title="与 Volcano &#x2F; Kueue 的配合"></a>与 Volcano &#x2F; Kueue 的配合</h2><p>纯 K8s 默认调度器不理解 Gang Scheduling（一组 Pod 必须同时启动）。AI 训练 Job 常用 <strong>Volcano</strong> 或 <strong>Kueue</strong>：</p><ul><li>队列与配额管理</li><li>PodGroup 语义：minAvailable 全部就绪才调度</li><li>抢占与回填策略</li></ul><p>视频批处理流水线同样受益于队列化：转码任务 burst 时不会挤爆显存。</p><h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><table><thead><tr><th>问题</th><th>原因</th><th>方向</th></tr></thead><tbody><tr><td>Pod Pending</td><td>节点无可用 GPU</td><td>扩容或释放僵尸任务</td></tr><tr><td>OOM</td><td>多 Pod 共享策略不当</td><td>MIG &#x2F; 显存限额</td></tr><tr><td>驱动不匹配</td><td>镜像 CUDA 版本 ≠ 节点驱动</td><td>统一版本矩阵</td></tr></tbody></table><p>K8s 层解决的是「哪张卡给谁」；卡内如何切片，需要 MIG、vGPU 或 MPS，见后续文章。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>Kubernetes</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>CUDA Stream 与 GPU 任务排队机制</title>
+    <link href="/2026/08/12/CUDA-Stream%E4%B8%8EGPU%E4%BB%BB%E5%8A%A1%E6%8E%92%E9%98%9F/"/>
+    <url>/2026/08/12/CUDA-Stream%E4%B8%8EGPU%E4%BB%BB%E5%8A%A1%E6%8E%92%E9%98%9F/</url>
+    
+    <content type="html"><![CDATA[<p>在 NVIDIA GPU 上，<strong>CUDA Stream</strong> 是最常用的软件层调度单元。可以把 Stream 理解为 GPU 上的「任务队列」：同一 Stream 内任务严格顺序执行，不同 Stream 之间则可以并发。</p><h2 id="Stream-的基本行为"><a href="#Stream-的基本行为" class="headerlink" title="Stream 的基本行为"></a>Stream 的基本行为</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs cuda">cudaStream_t s1, s2;<br>cudaStreamCreate(&amp;s1);<br>cudaStreamCreate(&amp;s2);<br><br>cudaMemcpyAsync(d_a, h_a, size, cudaMemcpyHostToDevice, s1);<br>kernel1&lt;&lt;&lt;grid, block, 0, s1&gt;&gt;&gt;(d_a);<br>cudaMemcpyAsync(h_b, d_b, size, cudaMemcpyDeviceToHost, s2);<br></code></pre></td></tr></table></figure><p>上述代码中，<code>s1</code> 上的拷贝与核函数顺序执行；<code>s2</code> 上的回传可与 <code>s1</code> 重叠，从而隐藏 PCIe 传输延迟。</p><h2 id="默认-Stream-的隐式同步"><a href="#默认-Stream-的隐式同步" class="headerlink" title="默认 Stream 的隐式同步"></a>默认 Stream 的隐式同步</h2><p>CUDA 规定：<strong>默认 Stream（Stream 0）与所有其他 Stream 之间存在隐式同步</strong>。新手常犯的错误是把所有操作塞进默认 Stream，导致本应并行的传输与计算串行化，GPU 利用率骤降。</p><p>生产代码应显式创建非默认 Stream，并配合 <code>cudaEvent</code> 做细粒度依赖管理。</p><h2 id="Stream-与硬件调度器"><a href="#Stream-与硬件调度器" class="headerlink" title="Stream 与硬件调度器"></a>Stream 与硬件调度器</h2><p>GPU 硬件调度器负责在 SM（Streaming Multiprocessor）上分配 warp。多个 Stream 提交的任务进入同一硬件队列后，调度器会在 warp 阻塞（等内存、等同步）时切换执行其他 warp——这是 <strong>GPU 层面时间复用</strong> 的基础。</p><p>但需注意：<strong>Stream 并发不等于无限并行</strong>。显存带宽、L2 缓存、SM 占用率都会成为瓶颈。</p><h2 id="视频场景中的应用"><a href="#视频场景中的应用" class="headerlink" title="视频场景中的应用"></a>视频场景中的应用</h2><p>视频解码后送 GPU 做 resize、色彩空间转换、编码时，典型流水线为：</p><ol><li>Stream A：DMA 拷贝 YUV 帧到显存</li><li>Stream B：NVENC&#x2F;NVDEC 或自定义 kernel 处理</li><li>Stream C：结果回传或写入显存环形缓冲</li></ol><p>三路 Stream 重叠后，单路 4K 转码的吞吐往往可提升 30% 以上。</p><h2 id="实践建议"><a href="#实践建议" class="headerlink" title="实践建议"></a>实践建议</h2><ul><li>为 IO、计算、回传分别绑定 Stream</li><li>避免在热路径频繁 <code>cudaDeviceSynchronize()</code></li><li>用 Nsight Systems 查看 Stream 时间线，确认是否真正重叠</li></ul><p>Stream 是单进程多任务调度的基石；多进程共享 GPU 时，还需要 MPS 或 MIG 等机制，这将在后续文章中展开。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>CUDA</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>GPU调度入门：为什么需要GPU调度</title>
+    <link href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E5%85%A5%E9%97%A8-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81GPU%E8%B0%83%E5%BA%A6/"/>
+    <url>/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E5%85%A5%E9%97%A8-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81GPU%E8%B0%83%E5%BA%A6/</url>
+    
+    <content type="html"><![CDATA[<p>GPU 最初为图形渲染而生，如今却支撑着 AI 训练、视频转码、科学计算等海量负载。当一块 GPU 上要同时跑多个任务时，<strong>谁来决定谁先跑、跑多久、占多少显存</strong>，就成了系统设计的核心问题——这就是 GPU 调度。</p><h2 id="单任务时代的问题"><a href="#单任务时代的问题" class="headerlink" title="单任务时代的问题"></a>单任务时代的问题</h2><p>早期桌面场景里，一块 GPU 通常只服务一个全屏游戏或一个 CUDA 程序。操作系统和驱动隐式地「独占」设备，开发者几乎不用考虑调度。</p><p>云原生和 AI 时代完全不同：</p><ul><li>一个 Kubernetes 节点可能挂载 8 张 GPU，却要承载几十个推理 Pod</li><li>视频平台要在同一张卡上并行处理多路 H.264&#x2F;H.265 转码</li><li>训练任务与在线推理共享集群，SLA 要求互不干扰</li></ul><p>没有显式调度，就会出现<strong>显存挤爆、算力饥饿、尾延迟飙升</strong>等问题。</p><h2 id="GPU-调度的三个维度"><a href="#GPU-调度的三个维度" class="headerlink" title="GPU 调度的三个维度"></a>GPU 调度的三个维度</h2><table><thead><tr><th>维度</th><th>调度对象</th><th>典型手段</th></tr></thead><tbody><tr><td>空间分区</td><td>显存、计算单元</td><td>MIG、vGPU、显存限额</td></tr><tr><td>时间分区</td><td>执行时间片</td><td>CUDA Stream、时间片轮转</td></tr><tr><td>任务编排</td><td>跨节点任务放置</td><td>K8s Device Plugin、Volcano</td></tr></tbody></table><h2 id="与-CPU-调度的差异"><a href="#与-CPU-调度的差异" class="headerlink" title="与 CPU 调度的差异"></a>与 CPU 调度的差异</h2><p>CPU 调度经过多年演进，内核已有成熟的抢占、优先级、 cgroup 限额。GPU 调度则高度依赖<strong>厂商驱动与运行时</strong>：</p><ul><li>NVIDIA 通过 CUDA Context、Stream、MPS&#x2F;MIG 提供多租户能力</li><li>AMD 走 ROCm + KFD 路径</li><li>上层编排器（K8s、Slurm）只能「看见」驱动暴露的资源抽象</li></ul><p>因此 GPU 调度往往是<strong>软硬协同</strong>的设计，而不是纯操作系统课题。</p><h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>理解 GPU 调度的动机，是后续学习 CUDA Stream、K8s GPU 调度、MIG 分区的基础。下一篇我们将从 CUDA 最贴近开发者的调度单元——<strong>Stream</strong>——入手，看看单卡多任务如何排队与并发。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>GPU调度</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>GPU调度</tag>
+      
+      <tag>入门</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
   
 </search>

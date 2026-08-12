@@ -19,21 +19,23 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
-<meta property="og:type" content="website">
-<meta property="og:title" content="关于">
-<meta property="og:url" content="https://cinebee111lagom.github.io/about/index.html">
+    <meta name="description" content="视频业务是 GPU 调度的高频场景：解码、滤镜、缩放、编码全在卡上完成。调度设计直接决定路数、延迟与电费。 硬件编解码单元NVIDIA GPU 除 CUDA Core 外，还有专用 NVDEC &#x2F; NVENC 引擎。它们与 SM 独立，可并行工作： 1CPU 读盘 → NVDEC 解码 → CUDA Kernel 处理 → NVENC 编码 → 输出  调度要点是让 NVDEC、SM、N">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频编解码中的 GPU 调度实践">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
+<meta property="og:description" content="视频业务是 GPU 调度的高频场景：解码、滤镜、缩放、编码全在卡上完成。调度设计直接决定路数、延迟与电费。 硬件编解码单元NVIDIA GPU 除 CUDA Core 外，还有专用 NVDEC &#x2F; NVENC 引擎。它们与 SM 独立，可并行工作： 1CPU 读盘 → NVDEC 解码 → CUDA Kernel 处理 → NVENC 编码 → 输出  调度要点是让 NVDEC、SM、N">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T12:48:46.000Z">
+<meta property="article:published_time" content="2026-08-12T04:00:00.000Z">
 <meta property="article:modified_time" content="2026-08-12T12:59:31.465Z">
 <meta property="article:author" content="cinebee111lagom">
+<meta property="article:tag" content="GPU调度">
+<meta property="article:tag" content="视频">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>关于 - cinebee111lagom</title>
+  <title>视频编解码中的 GPU 调度实践 - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -93,7 +95,7 @@
   <header>
     
 
-<div class="header-inner" style="height: 60vh;">
+<div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -302,9 +304,49 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="关于"></span>
+            <span id="subtitle" data-typed-text="视频编解码中的 GPU 调度实践"></span>
           
         </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-08-12 12:00" pubdate>
+          2026年8月12日 中午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          743 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          7 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
 
         
       </div>
@@ -322,77 +364,205 @@
 
   <main>
     
-      <div class="container nopadding-x-md">
-        <div id="board"
-          >
-          
-            <div class="about-avatar">
-              <img src="/img/avatar.png" srcset="/img/loading.gif" lazyload class="img-fluid" alt="avatar">
-            </div>
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
-                
+      
 
-<div class="text-center">
-  <div class="about-info">
-    <div class="about-name">Fluid</div>
-    <div class="about-intro">An elegant theme for Hexo</div>
-    <div class="about-icons">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
       
-        
-        
-        
-        <a href=https://github.com class="
-           hint--bottom hint--rounded"
-           aria-label="GitHub"
-           target="_blank"
-        >
-          <i class="iconfont icon-github-fill" aria-hidden="true"></i>
-          
-        </a>
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">视频编解码中的 GPU 调度实践</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>视频业务是 GPU 调度的高频场景：解码、滤镜、缩放、编码全在卡上完成。调度设计直接决定<strong>路数、延迟与电费</strong>。</p>
+<h2 id="硬件编解码单元"><a href="#硬件编解码单元" class="headerlink" title="硬件编解码单元"></a>硬件编解码单元</h2><p>NVIDIA GPU 除 CUDA Core 外，还有专用 <strong>NVDEC &#x2F; NVENC</strong> 引擎。它们与 SM 独立，可并行工作：</p>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dart">CPU 读盘 → NVDEC 解码 → CUDA <span class="hljs-title class_">Kernel</span> 处理 → NVENC 编码 → 输出<br></code></pre></td></tr></table></figure>
+
+<p>调度要点是让 NVDEC、SM、NVENC <strong>流水线重叠</strong>，而非串行等待。</p>
+<h2 id="多路转码调度模型"><a href="#多路转码调度模型" class="headerlink" title="多路转码调度模型"></a>多路转码调度模型</h2><p>典型转码服务架构：</p>
+<ol>
+<li><strong>任务队列</strong>（Redis &#x2F; Kafka）接收转码 Job</li>
+<li><strong>Worker</strong> 从队列拉任务，绑定 GPU 设备</li>
+<li>每 GPU 维护 <strong>Slot 池</strong>（如 MIG 实例或固定路数）</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 概念示意：每卡最多 concurrent_slots 路</span><br><span class="hljs-keyword">with</span> gpu_slot.acquire(gpu_id):<br>    pipeline.run(input_path, output_path)<br></code></pre></td></tr></table></figure>
+
+<p>Slot 数量由压测得出：1080p H.265 → NVENC 约 5–8 路&#x2F;卡（视代际与 preset 而定）。</p>
+<h2 id="帧级-vs-任务级调度"><a href="#帧级-vs-任务级调度" class="headerlink" title="帧级 vs 任务级调度"></a>帧级 vs 任务级调度</h2><table>
+<thead>
+<tr>
+<th>粒度</th>
+<th>说明</th>
+<th>适用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务级</td>
+<td>一路视频占一个 Slot 直到结束</td>
+<td>点播转码</td>
+</tr>
+<tr>
+<td>帧级</td>
+<td>多路帧交错进同一 Pipeline</td>
+<td>超低延迟直播</td>
+</tr>
+</tbody></table>
+<p>帧级调度复杂度高，需无锁环形缓冲与精细的 Stream 同步，但可把 NVENC 利用率推到 90%+。</p>
+<h2 id="与-CPU-的协同"><a href="#与-CPU-的协同" class="headerlink" title="与 CPU 的协同"></a>与 CPU 的协同</h2><p>并非所有滤镜都适合 GPU。轻量 OSD、元数据解析留 CPU；重滤镜（AI 超分、降噪）上 GPU。调度器应避免 <strong>CPU 等 GPU、GPU 等 CPU</strong> 的互相阻塞——用异步回调和双缓冲缓解。</p>
+<h2 id="监控指标"><a href="#监控指标" class="headerlink" title="监控指标"></a>监控指标</h2><ul>
+<li>每路 <strong>FPS &#x2F; 实际倍速</strong></li>
+<li>NVENC&#x2F;NVDEC <strong>利用率</strong>（非 SM 利用率）</li>
+<li><strong>PCIe 带宽</strong>（4K RAW 上卡是隐形瓶颈）</li>
+<li>队列 <strong>等待时间</strong>（调度是否饥饿）</li>
+</ul>
+<p>视频场景是检验 GPU 调度成色的试金石：算力、专用引擎、IO 三者必须协同。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
       
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
         
-        
-        
-        <a href=https://douban.com class="
-           hint--bottom hint--rounded"
-           aria-label="豆瓣"
-           target="_blank"
-        >
-          <i class="iconfont icon-douban-fill" aria-hidden="true"></i>
-          
-        </a>
+  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
       
-        
-        
-        
-        <a  class="qr-trigger
-           "
-           
-           target="_self"
-        >
-          <i class="iconfont icon-wechat-fill" aria-hidden="true"></i>
-          
-            <img class="qr-img" src="/img/favicon.png" srcset="/img/loading.gif" lazyload alt="qrcode" />
-          
-        </a>
+        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
       
+        <a href="/tags/%E8%A7%86%E9%A2%91/" class="print-no-link">#视频</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>视频编解码中的 GPU 调度实践</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/视频编解码中的GPU调度实践/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>cinebee111lagom</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年8月12日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/" title="多 GPU 并行调度与 NCCL 通信">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">多 GPU 并行调度与 NCCL 通信</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/08/12/GPU%E6%97%B6%E9%97%B4%E7%89%87%E8%B0%83%E5%BA%A6%E4%B8%8E%E7%A9%BA%E9%97%B4%E5%88%86%E5%8C%BA%E5%AF%B9%E6%AF%94/" title="GPU 时间片调度 vs 空间分区调度">
+                        <span class="hidden-mobile">GPU 时间片调度 vs 空间分区调度</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
     </div>
   </div>
 </div>
 
-<article class="about-content page-content mt-5">
-  <div class="markdown-body">
-    <p>你好，我是 <strong>cinebee111lagom</strong>，这里是我的个人博客。</p>
-<p>记录学习、技术与生活的点滴。</p>
-
-  </div>
-
-  
-</article>
-
 
 
 
@@ -419,11 +589,8 @@
 
 
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+
     
 
     
@@ -511,6 +678,110 @@
   
 
 
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
 
 
   <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>

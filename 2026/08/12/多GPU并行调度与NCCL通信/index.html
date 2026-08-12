@@ -19,21 +19,24 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
-<meta property="og:type" content="website">
-<meta property="og:title" content="关于">
-<meta property="og:url" content="https://cinebee111lagom.github.io/about/index.html">
+    <meta name="description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多 GPU 并行调度与 NCCL 通信">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
+<meta property="og:description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T12:48:46.000Z">
+<meta property="article:published_time" content="2026-08-12T04:30:00.000Z">
 <meta property="article:modified_time" content="2026-08-12T12:59:31.465Z">
 <meta property="article:author" content="cinebee111lagom">
+<meta property="article:tag" content="GPU调度">
+<meta property="article:tag" content="NCCL">
+<meta property="article:tag" content="分布式">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>关于 - cinebee111lagom</title>
+  <title>多 GPU 并行调度与 NCCL 通信 - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -93,7 +96,7 @@
   <header>
     
 
-<div class="header-inner" style="height: 60vh;">
+<div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -302,9 +305,49 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="关于"></span>
+            <span id="subtitle" data-typed-text="多 GPU 并行调度与 NCCL 通信"></span>
           
         </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-08-12 12:30" pubdate>
+          2026年8月12日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          812 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          7 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
 
         
       </div>
@@ -322,77 +365,216 @@
 
   <main>
     
-      <div class="container nopadding-x-md">
-        <div id="board"
-          >
-          
-            <div class="about-avatar">
-              <img src="/img/avatar.png" srcset="/img/loading.gif" lazyload class="img-fluid" alt="avatar">
-            </div>
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
-                
+      
 
-<div class="text-center">
-  <div class="about-info">
-    <div class="about-name">Fluid</div>
-    <div class="about-intro">An elegant theme for Hexo</div>
-    <div class="about-icons">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
       
-        
-        
-        
-        <a href=https://github.com class="
-           hint--bottom hint--rounded"
-           aria-label="GitHub"
-           target="_blank"
-        >
-          <i class="iconfont icon-github-fill" aria-hidden="true"></i>
-          
-        </a>
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">多 GPU 并行调度与 NCCL 通信</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>单卡算力有限时，训练与大规模推理依赖<strong>多 GPU 并行</strong>。除「把任务放哪张卡」外，还要调度 <strong>卡间通信</strong>——这往往比计算本身更棘手。</p>
+<h2 id="并行范式"><a href="#并行范式" class="headerlink" title="并行范式"></a>并行范式</h2><table>
+<thead>
+<tr>
+<th>范式</th>
+<th>切分维度</th>
+<th>通信模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数据并行</td>
+<td>Batch</td>
+<td>AllReduce 梯度</td>
+</tr>
+<tr>
+<td>张量并行</td>
+<td>层内矩阵</td>
+<td>AllReduce &#x2F; AllGather</td>
+</tr>
+<tr>
+<td>流水线并行</td>
+<td>层间</td>
+<td>P2P 激活传递</td>
+</tr>
+<tr>
+<td>序列并行</td>
+<td>序列长度</td>
+<td>分片 Attention</td>
+</tr>
+</tbody></table>
+<p>现代大模型常 <strong>3D 并行</strong> 组合使用，调度器需同时感知拓扑与带宽。</p>
+<h2 id="NCCL-的角色"><a href="#NCCL-的角色" class="headerlink" title="NCCL 的角色"></a>NCCL 的角色</h2><p><strong>NCCL（NVIDIA Collective Communications Library）</strong> 在 GPU 间实现高效集合通信，自动选择：</p>
+<ul>
+<li>NVLink（同节点多卡，带宽 数百 GB&#x2F;s）</li>
+<li>PCIe（较慢，易成瓶颈）</li>
+<li>InfiniBand &#x2F; RoCE（跨节点）</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># PyTorch DDP 底层依赖 NCCL</span><br>torch.distributed.init_process_group(backend=<span class="hljs-string">&quot;nccl&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<p>调度 implication：应把通信密集的阶段安排在 <strong>NVLink 全互联</strong> 的节点内，跨节点只做必要同步。</p>
+<h2 id="拓扑感知调度"><a href="#拓扑感知调度" class="headerlink" title="拓扑感知调度"></a>拓扑感知调度</h2><p>K8s 调度可结合节点 label：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">nodeAffinity:</span><br>  <span class="hljs-attr">requiredDuringSchedulingIgnoredDuringExecution:</span><br>    <span class="hljs-attr">nodeSelectorTerms:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">matchExpressions:</span><br>          <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">gpu-topology</span><br>            <span class="hljs-attr">operator:</span> <span class="hljs-string">In</span><br>            <span class="hljs-attr">values:</span> [<span class="hljs-string">&quot;nvlink-8&quot;</span>]<br></code></pre></td></tr></table></figure>
+
+<p>Slurm 的 <code>--gres=gpu:8</code> 配合 <code>CUDA_VISIBLE_DEVICES</code> 与拓扑检测脚本，是 HPC 侧常见做法。</p>
+<h2 id="视频分布式推理"><a href="#视频分布式推理" class="headerlink" title="视频分布式推理"></a>视频分布式推理</h2><p>多卡视频超分、实时拼接场景：</p>
+<ul>
+<li>按 <strong>时间片</strong> 或 <strong>空间块</strong> 分卡</li>
+<li>边界帧需要 halo exchange，通信量小于训练但仍需调度</li>
+<li>尾卡等待会导致帧率抖动——需静态分片 + 负载均衡</li>
+</ul>
+<p>多 GPU 调度 &#x3D; <strong>计算放置 + 通信编排</strong>，NCCL 是其中关键一环。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
       
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
         
-        
-        
-        <a href=https://douban.com class="
-           hint--bottom hint--rounded"
-           aria-label="豆瓣"
-           target="_blank"
-        >
-          <i class="iconfont icon-douban-fill" aria-hidden="true"></i>
-          
-        </a>
+  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
       
-        
-        
-        
-        <a  class="qr-trigger
-           "
-           
-           target="_self"
-        >
-          <i class="iconfont icon-wechat-fill" aria-hidden="true"></i>
-          
-            <img class="qr-img" src="/img/favicon.png" srcset="/img/loading.gif" lazyload alt="qrcode" />
-          
-        </a>
+        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
       
+        <a href="/tags/NCCL/" class="print-no-link">#NCCL</a>
+      
+        <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" class="print-no-link">#分布式</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>多 GPU 并行调度与 NCCL 通信</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/多GPU并行调度与NCCL通信/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>cinebee111lagom</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年8月12日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/08/12/vGPU%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96GPU%E8%B0%83%E5%BA%A6/" title="vGPU 与虚拟化场景下的 GPU 调度">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">vGPU 与虚拟化场景下的 GPU 调度</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/" title="视频编解码中的 GPU 调度实践">
+                        <span class="hidden-mobile">视频编解码中的 GPU 调度实践</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
     </div>
   </div>
 </div>
 
-<article class="about-content page-content mt-5">
-  <div class="markdown-body">
-    <p>你好，我是 <strong>cinebee111lagom</strong>，这里是我的个人博客。</p>
-<p>记录学习、技术与生活的点滴。</p>
-
-  </div>
-
-  
-</article>
-
 
 
 
@@ -419,11 +601,8 @@
 
 
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+
     
 
     
@@ -511,6 +690,110 @@
   
 
 
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
 
 
   <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>

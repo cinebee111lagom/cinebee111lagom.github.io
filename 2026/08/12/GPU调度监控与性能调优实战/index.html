@@ -19,21 +19,24 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="本站基于 Hexo 搭建，通过 GitHub Actions 自动部署到 GitHub Pages。 之后只需在本地写 Markdown，git push 即可发布新文章。">
+    <meta name="description" content="没有可观测性，调度策略就是盲人摸象。生产环境需要 指标、追踪、告警 闭环，持续验证调度是否有效。 核心监控指标利用率维度 DCGM_FI_DEV_GPU_UTIL：SM 利用率 DCGM_FI_PROF_GR_ENGINE_ACTIVE：图形&#x2F;计算引擎活跃比 NVENC&#x2F;NVDEC 利用率（视频必备）  显存维度 DCGM_FI_DEV_FB_USED &#x2F; FREE 按进程 &amp;">
 <meta property="og:type" content="article">
-<meta property="og:title" content="欢迎来到我的博客">
-<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/%E6%AC%A2%E8%BF%8E%E6%9D%A5%E5%88%B0%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/index.html">
+<meta property="og:title" content="GPU 调度监控与性能调优实战">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="本站基于 Hexo 搭建，通过 GitHub Actions 自动部署到 GitHub Pages。 之后只需在本地写 Markdown，git push 即可发布新文章。">
+<meta property="og:description" content="没有可观测性，调度策略就是盲人摸象。生产环境需要 指标、追踪、告警 闭环，持续验证调度是否有效。 核心监控指标利用率维度 DCGM_FI_DEV_GPU_UTIL：SM 利用率 DCGM_FI_PROF_GR_ENGINE_ACTIVE：图形&#x2F;计算引擎活跃比 NVENC&#x2F;NVDEC 利用率（视频必备）  显存维度 DCGM_FI_DEV_FB_USED &#x2F; FREE 按进程 &amp;">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T12:36:43.000Z">
+<meta property="article:published_time" content="2026-08-12T06:00:00.000Z">
 <meta property="article:modified_time" content="2026-08-12T12:59:31.465Z">
 <meta property="article:author" content="cinebee111lagom">
+<meta property="article:tag" content="GPU调度">
+<meta property="article:tag" content="监控">
+<meta property="article:tag" content="调优">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>欢迎来到我的博客 - cinebee111lagom</title>
+  <title>GPU 调度监控与性能调优实战 - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -302,7 +305,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="欢迎来到我的博客"></span>
+            <span id="subtitle" data-typed-text="GPU 调度监控与性能调优实战"></span>
           
         </div>
 
@@ -313,8 +316,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-08-12 20:36" pubdate>
-          2026年8月12日 晚上
+        <time datetime="2026-08-12 14:00" pubdate>
+          2026年8月12日 下午
         </time>
       </span>
     
@@ -325,7 +328,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          75 字
+          993 字
         
       </span>
     
@@ -336,7 +339,7 @@
         
         
         
-          1 分钟
+          9 分钟
         
       </span>
     
@@ -375,13 +378,79 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">欢迎来到我的博客</h1>
+            <h1 id="seo-header">GPU 调度监控与性能调优实战</h1>
             
             
               <div class="markdown-body">
                 
-                <p>本站基于 <strong>Hexo</strong> 搭建，通过 <strong>GitHub Actions</strong> 自动部署到 <a href="https://cinebee111lagom.github.io/">GitHub Pages</a>。</p>
-<p>之后只需在本地写 Markdown，<code>git push</code> 即可发布新文章。</p>
+                <p>没有可观测性，调度策略就是盲人摸象。生产环境需要 <strong>指标、追踪、告警</strong> 闭环，持续验证调度是否有效。</p>
+<h2 id="核心监控指标"><a href="#核心监控指标" class="headerlink" title="核心监控指标"></a>核心监控指标</h2><h3 id="利用率维度"><a href="#利用率维度" class="headerlink" title="利用率维度"></a>利用率维度</h3><ul>
+<li><code>DCGM_FI_DEV_GPU_UTIL</code>：SM 利用率</li>
+<li><code>DCGM_FI_PROF_GR_ENGINE_ACTIVE</code>：图形&#x2F;计算引擎活跃比</li>
+<li>NVENC&#x2F;NVDEC 利用率（视频必备）</li>
+</ul>
+<h3 id="显存维度"><a href="#显存维度" class="headerlink" title="显存维度"></a>显存维度</h3><ul>
+<li><code>DCGM_FI_DEV_FB_USED / FREE</code></li>
+<li>按进程 &#x2F; Pod 的显存归因（<code>nvidia-smi pmon</code>）</li>
+</ul>
+<h3 id="调度健康度"><a href="#调度健康度" class="headerlink" title="调度健康度"></a>调度健康度</h3><ul>
+<li>Pod <strong>Pending 时长</strong></li>
+<li>队列 <strong>积压长度</strong></li>
+<li>GPU <strong>分配率 vs 实际利用率</strong>（识别「占卡不用」）</li>
+</ul>
+<h2 id="工具栈推荐"><a href="#工具栈推荐" class="headerlink" title="工具栈推荐"></a>工具栈推荐</h2><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DCGM Exporter + Prometheus</td>
+<td>集群指标</td>
+</tr>
+<tr>
+<td>Grafana Dashboard</td>
+<td>可视化</td>
+</tr>
+<tr>
+<td>Nsight Systems</td>
+<td>单任务时间线</td>
+</tr>
+<tr>
+<td>Nsight Compute</td>
+<td>Kernel 级分析</td>
+</tr>
+<tr>
+<td>eBPF &#x2F; GPU telemetry</td>
+<td>低开销持续采样</td>
+</tr>
+</tbody></table>
+<h2 id="常见调优路径"><a href="#常见调优路径" class="headerlink" title="常见调优路径"></a>常见调优路径</h2><h3 id="现象：利用率低、延迟高"><a href="#现象：利用率低、延迟高" class="headerlink" title="现象：利用率低、延迟高"></a>现象：利用率低、延迟高</h3><ul>
+<li>检查是否默认 Stream 导致串行</li>
+<li>检查 PCIe 是否瓶颈（小 kernel 频繁传数据）</li>
+<li>视频场景：是否没用 NVENC 而走软编</li>
+</ul>
+<h3 id="现象：多任务-OOM"><a href="#现象：多任务-OOM" class="headerlink" title="现象：多任务 OOM"></a>现象：多任务 OOM</h3><ul>
+<li>启用 MIG 或限制并发 Slot</li>
+<li>训练侧：Gradient Checkpointing &#x2F; ZeRO</li>
+</ul>
+<h3 id="现象：P99-延迟抖动"><a href="#现象：P99-延迟抖动" class="headerlink" title="现象：P99 延迟抖动"></a>现象：P99 延迟抖动</h3><ul>
+<li>避免 MPS 混部延迟敏感任务</li>
+<li>隔离 NVENC 路与训练任务到不同卡</li>
+</ul>
+<h2 id="告警规则示例"><a href="#告警规则示例" class="headerlink" title="告警规则示例"></a>告警规则示例</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># Prometheus 示例</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">alert:</span> <span class="hljs-string">GpuMemoryNearFull</span><br>  <span class="hljs-attr">expr:</span> <span class="hljs-string">DCGM_FI_DEV_FB_USED</span> <span class="hljs-string">/</span> <span class="hljs-string">DCGM_FI_DEV_FB_TOTAL</span> <span class="hljs-string">&gt;</span> <span class="hljs-number">0.9</span><br>  <span class="hljs-attr">for:</span> <span class="hljs-string">5m</span><br><br><span class="hljs-bullet">-</span> <span class="hljs-attr">alert:</span> <span class="hljs-string">GpuUtilizationLowWhileQueueHigh</span><br>  <span class="hljs-attr">expr:</span> <span class="hljs-string">queue_depth</span> <span class="hljs-string">&gt;</span> <span class="hljs-number">100</span> <span class="hljs-string">and</span> <span class="hljs-string">avg_gpu_util</span> <span class="hljs-string">&lt;</span> <span class="hljs-number">0.3</span><br>  <span class="hljs-attr">for:</span> <span class="hljs-string">10m</span><br></code></pre></td></tr></table></figure>
+
+<p>第二条直指 <strong>调度失效</strong>：队列堆积但卡闲着，说明分配策略或 Slot 配置有问题。</p>
+<h2 id="闭环优化流程"><a href="#闭环优化流程" class="headerlink" title="闭环优化流程"></a>闭环优化流程</h2><ol>
+<li>压测得出单卡 <strong>安全并发路数 &#x2F; 显存曲线</strong></li>
+<li>写入调度器配置（MIG profile、Queue quota）</li>
+<li>上线监控与告警</li>
+<li>每周复盘：利用率、SLA、成本三角</li>
+</ol>
+<p>GPU 调度不是一次配置永久有效——新模型、新 codec、新硬件都会改变最优策略。持续监控才是调优的起点。</p>
+<hr>
+<p>以上十篇覆盖了从 CUDA Stream 到集群调度、从视频转码到训练显存的 GPU 调度全景。建议按入门 → 单卡 → 集群 → 场景 → 运维的顺序阅读。</p>
 
                 
               </div>
@@ -390,6 +459,38 @@
             <div>
               <div class="post-metas my-3">
   
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
+      
+        <a href="/tags/%E7%9B%91%E6%8E%A7/" class="print-no-link">#监控</a>
+      
+        <a href="/tags/%E8%B0%83%E4%BC%98/" class="print-no-link">#调优</a>
+      
+    </div>
   
 </div>
 
@@ -399,8 +500,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>欢迎来到我的博客</div>
-      <div>https://cinebee111lagom.github.io/2026/08/12/欢迎来到我的博客/</div>
+      <div>GPU 调度监控与性能调优实战</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/GPU调度监控与性能调优实战/</div>
     </div>
     <div class="license-meta">
       
@@ -444,12 +545,18 @@
                   <article class="post-prev col-6">
                     
                     
+                      <a href="/2026/08/12/%E6%AC%A2%E8%BF%8E%E6%9D%A5%E5%88%B0%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/" title="欢迎来到我的博客">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">欢迎来到我的博客</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/" title="GPU 调度监控与性能调优实战">
-                        <span class="hidden-mobile">GPU 调度监控与性能调优实战</span>
+                      <a href="/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/" title="GPU 集群作业调度：Slurm 与 Volcano">
+                        <span class="hidden-mobile">GPU 集群作业调度：Slurm 与 Volcano</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

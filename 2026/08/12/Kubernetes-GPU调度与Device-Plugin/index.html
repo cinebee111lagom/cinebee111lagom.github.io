@@ -19,21 +19,23 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
-<meta property="og:type" content="website">
-<meta property="og:title" content="关于">
-<meta property="og:url" content="https://cinebee111lagom.github.io/about/index.html">
+    <meta name="description" content="在 K8s 集群里调度 GPU，本质是让调度器「认识」GPU 这种异构资源，并在 Pod 启动时把正确的设备句柄注入容器。 资源模型K8s 通过 Extended Resource 暴露 GPU： 123resources:  limits:    nvidia.com&#x2F;gpu: 1  节点上必须运行 NVIDIA Device Plugin，它负责：  调用 nvidia-smi &#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes GPU 调度与 NVIDIA Device Plugin">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/Kubernetes-GPU%E8%B0%83%E5%BA%A6%E4%B8%8EDevice-Plugin/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="你好，我是 cinebee111lagom，这里是我的个人博客。 记录学习、技术与生活的点滴。">
+<meta property="og:description" content="在 K8s 集群里调度 GPU，本质是让调度器「认识」GPU 这种异构资源，并在 Pod 启动时把正确的设备句柄注入容器。 资源模型K8s 通过 Extended Resource 暴露 GPU： 123resources:  limits:    nvidia.com&#x2F;gpu: 1  节点上必须运行 NVIDIA Device Plugin，它负责：  调用 nvidia-smi &#x2F;">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T12:48:46.000Z">
+<meta property="article:published_time" content="2026-08-12T02:00:00.000Z">
 <meta property="article:modified_time" content="2026-08-12T12:59:31.465Z">
 <meta property="article:author" content="cinebee111lagom">
+<meta property="article:tag" content="GPU调度">
+<meta property="article:tag" content="Kubernetes">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>关于 - cinebee111lagom</title>
+  <title>Kubernetes GPU 调度与 NVIDIA Device Plugin - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -93,7 +95,7 @@
   <header>
     
 
-<div class="header-inner" style="height: 60vh;">
+<div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -302,9 +304,49 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="关于"></span>
+            <span id="subtitle" data-typed-text="Kubernetes GPU 调度与 NVIDIA Device Plugin"></span>
           
         </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-08-12 10:00" pubdate>
+          2026年8月12日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          853 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          8 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
 
         
       </div>
@@ -322,77 +364,216 @@
 
   <main>
     
-      <div class="container nopadding-x-md">
-        <div id="board"
-          >
-          
-            <div class="about-avatar">
-              <img src="/img/avatar.png" srcset="/img/loading.gif" lazyload class="img-fluid" alt="avatar">
-            </div>
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
-                
+      
 
-<div class="text-center">
-  <div class="about-info">
-    <div class="about-name">Fluid</div>
-    <div class="about-intro">An elegant theme for Hexo</div>
-    <div class="about-icons">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
       
-        
-        
-        
-        <a href=https://github.com class="
-           hint--bottom hint--rounded"
-           aria-label="GitHub"
-           target="_blank"
-        >
-          <i class="iconfont icon-github-fill" aria-hidden="true"></i>
-          
-        </a>
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Kubernetes GPU 调度与 NVIDIA Device Plugin</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>在 K8s 集群里调度 GPU，本质是让调度器「认识」GPU 这种异构资源，并在 Pod 启动时把正确的设备句柄注入容器。</p>
+<h2 id="资源模型"><a href="#资源模型" class="headerlink" title="资源模型"></a>资源模型</h2><p>K8s 通过 Extended Resource 暴露 GPU：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">resources:</span><br>  <span class="hljs-attr">limits:</span><br>    <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-number">1</span><br></code></pre></td></tr></table></figure>
+
+<p>节点上必须运行 <strong>NVIDIA Device Plugin</strong>，它负责：</p>
+<ol>
+<li>调用 <code>nvidia-smi</code> &#x2F; NVML 枚举 GPU</li>
+<li>向 kubelet 注册 <code>nvidia.com/gpu</code> 资源容量</li>
+<li>Pod 绑定时，将 <code>NVIDIA_VISIBLE_DEVICES</code> 等环境变量写入容器</li>
+</ol>
+<h2 id="调度流程"><a href="#调度流程" class="headerlink" title="调度流程"></a>调度流程</h2><figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs dart"><span class="hljs-title class_">Pending</span> <span class="hljs-title class_">Pod</span> → kube-scheduler 过滤/打分有 GPU 的节点<br>           → 绑定 <span class="hljs-title class_">Node</span><br>           → kubelet 创建设备 → <span class="hljs-title class_">Device</span> <span class="hljs-title class_">Plugin</span> <span class="hljs-title class_">Allocate</span>()<br>           → 容器内可见指定 GPU<br></code></pre></td></tr></table></figure>
+
+<p>默认调度器按「整卡」分配。一张 A100 即使只用了 2GB 显存，也会被标记为整卡占用——这是<strong>粗粒度调度</strong>的典型痛点。</p>
+<h2 id="GPU-Operator-的角色"><a href="#GPU-Operator-的角色" class="headerlink" title="GPU Operator 的角色"></a>GPU Operator 的角色</h2><p>NVIDIA GPU Operator 一站式部署：</p>
+<ul>
+<li>Device Plugin</li>
+<li>DCGM Exporter（监控）</li>
+<li>MIG Manager（可选）</li>
+<li>Container Runtime 配置（<code>nvidia</code> runtime class）</li>
+</ul>
+<p>生产集群建议通过 Operator 而非手工装插件，减少驱动版本与容器运行时不匹配的风险。</p>
+<h2 id="与-Volcano-Kueue-的配合"><a href="#与-Volcano-Kueue-的配合" class="headerlink" title="与 Volcano &#x2F; Kueue 的配合"></a>与 Volcano &#x2F; Kueue 的配合</h2><p>纯 K8s 默认调度器不理解 Gang Scheduling（一组 Pod 必须同时启动）。AI 训练 Job 常用 <strong>Volcano</strong> 或 <strong>Kueue</strong>：</p>
+<ul>
+<li>队列与配额管理</li>
+<li>PodGroup 语义：minAvailable 全部就绪才调度</li>
+<li>抢占与回填策略</li>
+</ul>
+<p>视频批处理流水线同样受益于队列化：转码任务 burst 时不会挤爆显存。</p>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>原因</th>
+<th>方向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pod Pending</td>
+<td>节点无可用 GPU</td>
+<td>扩容或释放僵尸任务</td>
+</tr>
+<tr>
+<td>OOM</td>
+<td>多 Pod 共享策略不当</td>
+<td>MIG &#x2F; 显存限额</td>
+</tr>
+<tr>
+<td>驱动不匹配</td>
+<td>镜像 CUDA 版本 ≠ 节点驱动</td>
+<td>统一版本矩阵</td>
+</tr>
+</tbody></table>
+<p>K8s 层解决的是「哪张卡给谁」；卡内如何切片，需要 MIG、vGPU 或 MPS，见后续文章。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
       
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
         
-        
-        
-        <a href=https://douban.com class="
-           hint--bottom hint--rounded"
-           aria-label="豆瓣"
-           target="_blank"
-        >
-          <i class="iconfont icon-douban-fill" aria-hidden="true"></i>
-          
-        </a>
+  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
       
-        
-        
-        
-        <a  class="qr-trigger
-           "
-           
-           target="_self"
-        >
-          <i class="iconfont icon-wechat-fill" aria-hidden="true"></i>
-          
-            <img class="qr-img" src="/img/favicon.png" srcset="/img/loading.gif" lazyload alt="qrcode" />
-          
-        </a>
+        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
       
+        <a href="/tags/Kubernetes/" class="print-no-link">#Kubernetes</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Kubernetes GPU 调度与 NVIDIA Device Plugin</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/Kubernetes-GPU调度与Device-Plugin/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>cinebee111lagom</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年8月12日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/08/12/NVIDIA-MIG-%E5%A4%9A%E5%AE%9E%E4%BE%8BGPU%E8%B0%83%E5%BA%A6/" title="NVIDIA MIG：多实例 GPU 的空间分区调度">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">NVIDIA MIG：多实例 GPU 的空间分区调度</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/08/12/CUDA-Stream%E4%B8%8EGPU%E4%BB%BB%E5%8A%A1%E6%8E%92%E9%98%9F/" title="CUDA Stream 与 GPU 任务排队机制">
+                        <span class="hidden-mobile">CUDA Stream 与 GPU 任务排队机制</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
     </div>
   </div>
 </div>
 
-<article class="about-content page-content mt-5">
-  <div class="markdown-body">
-    <p>你好，我是 <strong>cinebee111lagom</strong>，这里是我的个人博客。</p>
-<p>记录学习、技术与生活的点滴。</p>
-
-  </div>
-
-  
-</article>
-
 
 
 
@@ -419,11 +600,8 @@
 
 
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+
     
 
     
@@ -511,6 +689,110 @@
   
 
 
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
 
 
   <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
