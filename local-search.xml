@@ -4,31 +4,6 @@
   
   
   <entry>
-    <title>11</title>
-    <link href="/2026/08/12/11/"/>
-    <url>/2026/08/12/11/</url>
-    
-    <content type="html"><![CDATA[<p>\documentclass[12pt,a4paper]{ctexart}<br>\usepackage{amsmath, amssymb, amsfonts}<br>\usepackage{geometry}<br>\usepackage{bm}<br>\usepackage{xcolor}</p><p>% 设置页边距<br>\geometry{left&#x3D;3cm, right&#x3D;3cm, top&#x3D;3cm, bottom&#x3D;3cm}</p><p>\title{\textbf{通信原理：角度调制与包络检波门限效应总结}}<br>\author{通信原理学习笔记}<br>\date{\today}</p><p>\begin{document}</p><p>\maketitle</p><p>\section{调频（FM）与调相（PM）的数学关系与比较}</p><p>\subsection{基本定义}<br>\textbf{调相（PM）}：<br>瞬时相位偏移 (\varphi(t)) 与调制信号 (m(t)) 成正比，即：<br>[<br>\varphi(t) &#x3D; K_{PM} m(t)<br>]<br>其中 (K_{PM}) 为调相灵敏度（单位：rad&#x2F;V）。其时域表达式为：<br>[<br>s_{PM}(t) &#x3D; A_c \cos\left[\omega_c t + K_{PM} m(t)\right]<br>]</p><p>\textbf{调频（FM）}：<br>瞬时频率偏移 (d\varphi(t)&#x2F;dt) 与调制信号 (m(t)) 成正比，即：<br>[<br>\frac{d\varphi(t)}{dt} &#x3D; K_{FM} m(t)<br>]<br>因此，瞬时相位偏移是调制信号的积分：<br>[<br>\varphi(t) &#x3D; K_{FM} \int m(t) dt<br>]<br>其中 (K_{FM}) 为调频灵敏度（单位：rad&#x2F;(V(\cdot)s) 或 Hz&#x2F;V）。其时域表达式为：<br>[<br>s_{FM}(t) &#x3D; A_c \cos\left[\omega_c t + K_{FM} \int m(t) dt \right]<br>]</p><p>\subsection{波形相似性与相互转化}<br>如果是\textbf{单音信号} (m(t) &#x3D; A_m \cos \omega_m t) 作为调制信号，由于 (\int m(t) dt &#x3D; \frac{A_m}{\omega_m} \sin \omega_m t)，最终 FM 和 PM 的波形都会表现为一个标准的调角正弦波。<br>\textbf{注意}：如果未预先设定调制信号 (m(t)) 的真值，单凭波形根本无法判定它是调频波还是调相波。</p><p>\textbf{相互转化关系}：<br>\begin{itemize}<br>    \item \textbf{直接调频}：使用压控振荡器（VCO）直接控制载波频率。<br>    \item \textbf{间接调频（阿姆斯特朗法）}：调制信号先通过\textbf{积分器}，再送入 \textbf{PM 调制器}，输出即为 FM 信号。<br>    \item \textbf{间接调相}：调制信号先通过\textbf{微分器}，再送入 \textbf{FM 调制器}，输出即为 PM 信号。<br>\end{itemize}</p><p>\section{单音调制与关键参数}<br>假设调制信号为标准的单音信号 (m(t) &#x3D; A_m \cos \omega_m t)。</p><p>\subsection{调频（FM）参数}<br>单音调频波的时域表达式为：<br>[<br>s_{FM}(t) &#x3D; A_c \cos\left[\omega_c t + m_f \sin \omega_m t \right]<br>]<br>其中，(m_f) 为\textbf{调频指数}（代表最大相位偏移）：<br>[<br>m_f &#x3D; \frac{K_{FM} A_m}{\omega_m} &#x3D; \frac{\Delta f_{FM}}{f_m}<br>]<br>\textbf{特征}：对于调频波，最大频偏 (\Delta f_{FM}) 由调制信号幅度决定（与 (f_m) 无关）；而调频指数 (m_f) 与调制信号频率 (f_m) \textbf{成反比}。频率越低，相位积累越大。</p><p>\subsection{调相（PM）参数}<br>单音调相波的时域表达式为：<br>[<br>s_{PM}(t) &#x3D; A_c \cos\left[\omega_c t + m_p \cos \omega_m t \right]<br>]<br>其中，(m_p) 为\textbf{调相指数}：<br>[<br>m_p &#x3D; K_{PM} A_m &#x3D; \frac{\Delta f_{PM}}{f_m}<br>]<br>\textbf{特征}：调相指数 (m_p) 仅由调制信号幅度 (A_m) 决定，与调制信号频率 (f_m) \textbf{无关}。</p><p>\subsection{例题解析（求调制信号）}<br>已知某调角波表达式 (s_{角}(t) &#x3D; A_c \cos\left[ \omega_c t + \varphi(t) \right])，要求解调制信号 (m(t))：<br>\begin{itemize}<br>    \item \textbf{若是 PM 波}：相位偏移 (\varphi(t)) 就是 (K_{PM} m(t))，直接 (\varphi(t) &#x2F; K_{PM}) 即可得到调制信号。<br>    \item \textbf{若是 FM 波}：对瞬时相位 (\varphi(t)) 求导得到角频率偏移：(\frac{d\varphi(t)}{dt} &#x3D; K_{FM} m(t))，故 (m(t) &#x3D; \frac{1}{K_{FM}} \cdot \frac{d\varphi(t)}{dt})。<br>\end{itemize}</p><p>\section{窄带角度调制（窄带调角）}</p><p>\subsection{前提条件}<br>当最大瞬时相位偏移满足条件 (|\varphi(t)| \ll 1)（通常指小于 0.5 弧度或 30(^\circ)）时，称为窄带调角（NBFM&#x2F;NBPM）。</p><p>\subsection{数学近似}<br>利用微积分中的小角度近似展开：<br>[<br>\cos \varphi(t) \approx 1, \qquad \sin \varphi(t) \approx \varphi(t)<br>]</p><p>\subsection{时域表达式与 AM 的区别}<br>以窄带调频（NBFM）为例，代入近似公式：<br>\begin{align*}<br>s_{NBFM}(t) &amp;&#x3D; A_c \cos\left[ \omega_c t + \varphi(t) \right] \<br>            &amp;&#x3D; A_c \cos \omega_c t \cos \varphi(t) - A_c \sin \omega_c t \sin \varphi(t) \<br>            &amp;\approx A_c \cos \omega_c t - A_c \varphi(t) \sin \omega_c t \<br>            &amp;\approx A_c \cos \omega_c t - A_c K_{FM} \left[ \int m(t) dt \right] \sin \omega_c t<br>\end{align*}<br>其频谱结构通常与普通调幅（AM）信号带宽相同。<br>\textbf{关键区别}：窄带调角中，载波项 (\cos \omega_c t) 与边带项 (\sin \omega_c t) 是\textbf{正交}的（相位差 (90^\circ)）；而 AM 信号中载波项与边带项是\textbf{同相}的。</p><p>\subsection{实际应用}<br>窄带调角主要应用于\textbf{阿姆斯特朗（Armstrong）间接调频法}：先产生一个 NBFM 信号，然后通过\textbf{倍频器}将相位偏移（即调频指数）成倍放大，从而获得宽带调频（WBFM）信号。</p><p>\section{包络检波器的门限效应}<br>这是模拟通信中\textbf{非相干解调}（即包络检波）存在的一个固有缺陷。</p><p>\subsection{现象描述}<br>\begin{itemize}<br>    \item \textbf{大信噪比时}：输入信噪比高，包络检波输出信噪比与输入信噪比近似成线性关系。<br>    \item \textbf{小信噪比时（门限效应）}：当输入信噪比下降到某一特定数值（门限值）以下时，包络检波的输出信噪比会\textbf{急剧恶化}，下降速度远大于输入信噪比的下降速度。这种现象称为“门限效应”。<br>\end{itemize}</p><p>\subsection{原理推导}<br>当输入噪声强度很大，满足条件 (A_0 + m(t) \ll n_i(t))（(n_i(t)) 为输入噪声包络）时，包络检波器提取出来的合成包络 $\rho(t)$ 近似为：<br>[<br>\rho(t) \approx \sqrt{n_c^2(t) + n_s^2(t)} + \frac{n_c(t)}{\sqrt{n_c^2(t) + n_s^2(t)}} m(t) + \dots<br>]<br>此公式表明，当噪声占据主导时，信号 (m(t)) 与噪声混乱叠加，无法从包络中分离出原始调制信号，导致信噪比急剧恶化。</p><p>\subsection{与相干解调的对比}<br>\begin{itemize}<br>    \item \textbf{相干解调（同步检波）不存在门限效应}。它是线性运算，输入信噪比再低，输出信噪比依然会成比例跟随下降（直到信号微弱到无法辨认，但不会急剧恶化）。<br>    \item 因此，\textbf{DSB（双边带）、SSB（单边带）、VSB（残留边带）}这类抑制载波的调幅信号，其包络与调制信号 (m(t)) 并不成正比。在接收端需要采用\textbf{插入强载波法}（插入足够大的载波，使其变为类似 AM 信号），才能使用包络检波器进行解调。<br>\end{itemize}</p><p>\end{document}</p>]]></content>
-    
-    
-    <categories>
-      
-      <category>11</category>
-      
-    </categories>
-    
-    
-    <tags>
-      
-      <tag>11</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>GPU 调度监控与性能调优实战</title>
     <link href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/"/>
     <url>/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/</url>
