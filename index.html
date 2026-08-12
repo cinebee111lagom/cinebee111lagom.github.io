@@ -396,69 +396,6 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2026/08/12/Hexo%E5%8D%9A%E5%AE%A2Markdown%E5%86%99%E4%BD%9C%E4%B8%8E%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97/" target="_self">
-          Hexo11111
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2026/08/12/Hexo%E5%8D%9A%E5%AE%A2Markdown%E5%86%99%E4%BD%9C%E4%B8%8E%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97/" target="_self">
-        <div>
-          本文介绍如何在本站用 Markdown 写文章，并通过 git push 自动发布。 新建文章在博客根目录执行： 1npx hexo new post &quot;文章标题&quot;  会在 source/_posts/ 下生成 Markdown 文件，文件名即 URL 路径的一部分。 Front Matter 格式每篇文章开头需要 YAML 元数据： 123456789---title: 文章
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2026-08-12 21:12" pubdate>
-              2026-08-12
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/%E5%8D%9A%E5%AE%A2%E8%BF%90%E7%BB%B4/" class="category-chain-item">博客运维</a>
-  
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/Hexo/">#Hexo</a>
-            
-              <a href="/tags/Markdown/">#Markdown</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
         <a href="/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/" target="_self">
           GPU 集群作业调度：Slurm 与 Volcano
         </a>
@@ -958,6 +895,69 @@
               <a href="/tags/GPU%E8%B0%83%E5%BA%A6/">#GPU调度</a>
             
               <a href="/tags/Kubernetes/">#Kubernetes</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2026/08/12/CUDA-Stream%E4%B8%8EGPU%E4%BB%BB%E5%8A%A1%E6%8E%92%E9%98%9F/" target="_self">
+          CUDA Stream 与 GPU 任务排队机制
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2026/08/12/CUDA-Stream%E4%B8%8EGPU%E4%BB%BB%E5%8A%A1%E6%8E%92%E9%98%9F/" target="_self">
+        <div>
+          在 NVIDIA GPU 上，CUDA Stream 是最常用的软件层调度单元。可以把 Stream 理解为 GPU 上的「任务队列」：同一 Stream 内任务严格顺序执行，不同 Stream 之间则可以并发。 Stream 的基本行为1234567cudaStream_t s1, s2;cudaStreamCreate(&amp;s1);cudaStreamCreate(&amp;s2);cu
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2026-08-12 09:30" pubdate>
+              2026-08-12
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/GPU%E8%B0%83%E5%BA%A6/">#GPU调度</a>
+            
+              <a href="/tags/CUDA/">#CUDA</a>
             
           </div>
         

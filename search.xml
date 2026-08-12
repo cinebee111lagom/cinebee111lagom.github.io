@@ -33,33 +33,6 @@
     
     
     <entry>
-      <title>Hexo11111</title>
-      <link href="/2026/08/12/Hexo%E5%8D%9A%E5%AE%A2Markdown%E5%86%99%E4%BD%9C%E4%B8%8E%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97/"/>
-      <url>/2026/08/12/Hexo%E5%8D%9A%E5%AE%A2Markdown%E5%86%99%E4%BD%9C%E4%B8%8E%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97/</url>
-      
-        <content type="html"><![CDATA[<p>本文介绍如何在本站用 Markdown 写文章，并通过 <code>git push</code> 自动发布。</p><h2 id="新建文章"><a href="#新建文章" class="headerlink" title="新建文章"></a>新建文章</h2><p>在博客根目录执行：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">npx hexo new post <span class="hljs-string">&quot;文章标题&quot;</span><br></code></pre></td></tr></table></figure><p>会在 <code>source/_posts/</code> 下生成 Markdown 文件，文件名即 URL 路径的一部分。</p><h2 id="Front-Matter-格式"><a href="#Front-Matter-格式" class="headerlink" title="Front Matter 格式"></a>Front Matter 格式</h2><p>每篇文章开头需要 YAML 元数据：</p><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> <span class="hljs-string">文章标题</span><br><span class="hljs-attr">date:</span> <span class="hljs-number">2026-08-12 21:00:00</span><br><span class="hljs-attr">tags:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">标签一</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">标签二</span><br><span class="hljs-attr">categories:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">分类名</span><br><span class="hljs-meta">---</span><br></code></pre></td></tr></table></figure><p>正文写在 <code>---</code> 之后，支持标准 Markdown。</p><h2 id="常用-Markdown-语法"><a href="#常用-Markdown-语法" class="headerlink" title="常用 Markdown 语法"></a>常用 Markdown 语法</h2><h3 id="标题"><a href="#标题" class="headerlink" title="标题"></a>标题</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs markdown"><span class="hljs-section">## 二级标题</span><br><span class="hljs-section">### 三级标题</span><br></code></pre></td></tr></table></figure><h3 id="代码块"><a href="#代码块" class="headerlink" title="代码块"></a>代码块</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">hello</span>():<br>    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Hello, blog!&quot;</span>)<br></code></pre></td></tr></table></figure><h3 id="表格"><a href="#表格" class="headerlink" title="表格"></a>表格</h3><table><thead><tr><th>列 A</th><th>列 B</th></tr></thead><tbody><tr><td>内容</td><td>内容</td></tr></tbody></table><h3 id="链接与图片"><a href="#链接与图片" class="headerlink" title="链接与图片"></a>链接与图片</h3><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs markdown">[<span class="hljs-string">链接文字</span>](<span class="hljs-link">https://example.com</span>)<br>![<span class="hljs-string">图片描述</span>](<span class="hljs-link">/img/example.png</span>)<br></code></pre></td></tr></table></figure><p>图片可放在 <code>source/img/</code> 目录，引用路径以 <code>/img/</code> 开头。</p><h2 id="本地预览"><a href="#本地预览" class="headerlink" title="本地预览"></a>本地预览</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">npm run server<br></code></pre></td></tr></table></figure><p>浏览器打开 <a href="http://localhost:4000/">http://localhost:4000</a> 查看效果，改完即刷新。</p><h2 id="发布到线上"><a href="#发布到线上" class="headerlink" title="发布到线上"></a>发布到线上</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">git add .<br>git commit -m <span class="hljs-string">&quot;更新文章：文章标题&quot;</span><br>git push<br></code></pre></td></tr></table></figure><p>推送后 GitHub Actions 会自动构建 Hexo，并将静态页面部署到 <code>gh-pages</code> 分支。约 1 分钟后线上站点即更新。</p><h2 id="写作建议"><a href="#写作建议" class="headerlink" title="写作建议"></a>写作建议</h2><ol><li><strong>标题清晰</strong>：一句话说明文章价值</li><li><strong>分段简短</strong>：每段 3–5 行，便于阅读</li><li><strong>代码可运行</strong>：示例尽量完整、可复制</li><li><strong>标签统一</strong>：同类文章用相同 tags，方便归档检索</li></ol><h2 id="本仓库路径速查"><a href="#本仓库路径速查" class="headerlink" title="本仓库路径速查"></a>本仓库路径速查</h2><table><thead><tr><th>路径</th><th>用途</th></tr></thead><tbody><tr><td><code>source/_posts/</code></td><td>文章 Markdown</td></tr><tr><td><code>source/img/</code></td><td>图片资源</td></tr><tr><td><code>source/about/</code></td><td>关于页</td></tr><tr><td><code>_config.yml</code></td><td>站点全局配置</td></tr><tr><td><code>_config.fluid.yml</code></td><td>Fluid 主题配置</td></tr></tbody></table><p>写好 Markdown、推送到 GitHub，就是本博客的完整发布流程。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> 博客运维 </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> Hexo </tag>
-            
-            <tag> Markdown </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>GPU 集群作业调度：Slurm 与 Volcano</title>
       <link href="/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/"/>
       <url>/2026/08/12/GPU%E9%9B%86%E7%BE%A4%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6-Slurm%E4%B8%8EVolcano/</url>
