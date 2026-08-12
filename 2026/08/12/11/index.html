@@ -19,24 +19,22 @@
   <meta name="author" content="cinebee111lagom">
   <meta name="keywords" content="">
   
-    <meta name="description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
+    <meta name="description" content="\documentclass[12pt,a4paper]{ctexart}\usepackage{amsmath, amssymb, amsfonts}\usepackage{geometry}\usepackage{bm}\usepackage{xcolor} % 设置页边距\geometry{left&#x3D;3cm, right&#x3D;3cm, top&#x3D;3cm, bottom">
 <meta property="og:type" content="article">
-<meta property="og:title" content="多 GPU 并行调度与 NCCL 通信">
-<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/%E5%A4%9AGPU%E5%B9%B6%E8%A1%8C%E8%B0%83%E5%BA%A6%E4%B8%8ENCCL%E9%80%9A%E4%BF%A1/index.html">
+<meta property="og:title" content="11">
+<meta property="og:url" content="https://cinebee111lagom.github.io/2026/08/12/11/index.html">
 <meta property="og:site_name" content="cinebee111lagom">
-<meta property="og:description" content="单卡算力有限时，训练与大规模推理依赖多 GPU 并行。除「把任务放哪张卡」外，还要调度 卡间通信——这往往比计算本身更棘手。 并行范式   范式 切分维度 通信模式    数据并行 Batch AllReduce 梯度   张量并行 层内矩阵 AllReduce &#x2F; AllGather   流水线并行 层间 P2P 激活传递   序列并行 序列长度 分片 Attention   现代大模">
+<meta property="og:description" content="\documentclass[12pt,a4paper]{ctexart}\usepackage{amsmath, amssymb, amsfonts}\usepackage{geometry}\usepackage{bm}\usepackage{xcolor} % 设置页边距\geometry{left&#x3D;3cm, right&#x3D;3cm, top&#x3D;3cm, bottom">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-08-12T04:30:00.000Z">
+<meta property="article:published_time" content="2026-08-12T13:18:35.000Z">
 <meta property="article:modified_time" content="2026-08-12T13:19:09.065Z">
 <meta property="article:author" content="cinebee111lagom">
-<meta property="article:tag" content="GPU调度">
-<meta property="article:tag" content="NCCL">
-<meta property="article:tag" content="分布式">
+<meta property="article:tag" content="11">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>多 GPU 并行调度与 NCCL 通信 - cinebee111lagom</title>
+  <title>11 - cinebee111lagom</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -305,7 +303,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="多 GPU 并行调度与 NCCL 通信"></span>
+            <span id="subtitle" data-typed-text="11"></span>
           
         </div>
 
@@ -316,8 +314,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-08-12 12:30" pubdate>
-          2026年8月12日 下午
+        <time datetime="2026-08-12 21:18" pubdate>
+          2026年8月12日 晚上
         </time>
       </span>
     
@@ -328,7 +326,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          812 字
+          3.8k 字
         
       </span>
     
@@ -339,7 +337,7 @@
         
         
         
-          7 分钟
+          32 分钟
         
       </span>
     
@@ -378,62 +376,35 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">多 GPU 并行调度与 NCCL 通信</h1>
+            <h1 id="seo-header">11</h1>
             
             
               <div class="markdown-body">
                 
-                <p>单卡算力有限时，训练与大规模推理依赖<strong>多 GPU 并行</strong>。除「把任务放哪张卡」外，还要调度 <strong>卡间通信</strong>——这往往比计算本身更棘手。</p>
-<h2 id="并行范式"><a href="#并行范式" class="headerlink" title="并行范式"></a>并行范式</h2><table>
-<thead>
-<tr>
-<th>范式</th>
-<th>切分维度</th>
-<th>通信模式</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>数据并行</td>
-<td>Batch</td>
-<td>AllReduce 梯度</td>
-</tr>
-<tr>
-<td>张量并行</td>
-<td>层内矩阵</td>
-<td>AllReduce &#x2F; AllGather</td>
-</tr>
-<tr>
-<td>流水线并行</td>
-<td>层间</td>
-<td>P2P 激活传递</td>
-</tr>
-<tr>
-<td>序列并行</td>
-<td>序列长度</td>
-<td>分片 Attention</td>
-</tr>
-</tbody></table>
-<p>现代大模型常 <strong>3D 并行</strong> 组合使用，调度器需同时感知拓扑与带宽。</p>
-<h2 id="NCCL-的角色"><a href="#NCCL-的角色" class="headerlink" title="NCCL 的角色"></a>NCCL 的角色</h2><p><strong>NCCL（NVIDIA Collective Communications Library）</strong> 在 GPU 间实现高效集合通信，自动选择：</p>
-<ul>
-<li>NVLink（同节点多卡，带宽 数百 GB&#x2F;s）</li>
-<li>PCIe（较慢，易成瓶颈）</li>
-<li>InfiniBand &#x2F; RoCE（跨节点）</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># PyTorch DDP 底层依赖 NCCL</span><br>torch.distributed.init_process_group(backend=<span class="hljs-string">&quot;nccl&quot;</span>)<br></code></pre></td></tr></table></figure>
-
-<p>调度 implication：应把通信密集的阶段安排在 <strong>NVLink 全互联</strong> 的节点内，跨节点只做必要同步。</p>
-<h2 id="拓扑感知调度"><a href="#拓扑感知调度" class="headerlink" title="拓扑感知调度"></a>拓扑感知调度</h2><p>K8s 调度可结合节点 label：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">nodeAffinity:</span><br>  <span class="hljs-attr">requiredDuringSchedulingIgnoredDuringExecution:</span><br>    <span class="hljs-attr">nodeSelectorTerms:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">matchExpressions:</span><br>          <span class="hljs-bullet">-</span> <span class="hljs-attr">key:</span> <span class="hljs-string">gpu-topology</span><br>            <span class="hljs-attr">operator:</span> <span class="hljs-string">In</span><br>            <span class="hljs-attr">values:</span> [<span class="hljs-string">&quot;nvlink-8&quot;</span>]<br></code></pre></td></tr></table></figure>
-
-<p>Slurm 的 <code>--gres=gpu:8</code> 配合 <code>CUDA_VISIBLE_DEVICES</code> 与拓扑检测脚本，是 HPC 侧常见做法。</p>
-<h2 id="视频分布式推理"><a href="#视频分布式推理" class="headerlink" title="视频分布式推理"></a>视频分布式推理</h2><p>多卡视频超分、实时拼接场景：</p>
-<ul>
-<li>按 <strong>时间片</strong> 或 <strong>空间块</strong> 分卡</li>
-<li>边界帧需要 halo exchange，通信量小于训练但仍需调度</li>
-<li>尾卡等待会导致帧率抖动——需静态分片 + 负载均衡</li>
-</ul>
-<p>多 GPU 调度 &#x3D; <strong>计算放置 + 通信编排</strong>，NCCL 是其中关键一环。</p>
+                <p>\documentclass[12pt,a4paper]{ctexart}<br>\usepackage{amsmath, amssymb, amsfonts}<br>\usepackage{geometry}<br>\usepackage{bm}<br>\usepackage{xcolor}</p>
+<p>% 设置页边距<br>\geometry{left&#x3D;3cm, right&#x3D;3cm, top&#x3D;3cm, bottom&#x3D;3cm}</p>
+<p>\title{\textbf{通信原理：角度调制与包络检波门限效应总结}}<br>\author{通信原理学习笔记}<br>\date{\today}</p>
+<p>\begin{document}</p>
+<p>\maketitle</p>
+<p>\section{调频（FM）与调相（PM）的数学关系与比较}</p>
+<p>\subsection{基本定义}<br>\textbf{调相（PM）}：<br>瞬时相位偏移 (\varphi(t)) 与调制信号 (m(t)) 成正比，即：<br>[<br>\varphi(t) &#x3D; K_{PM} m(t)<br>]<br>其中 (K_{PM}) 为调相灵敏度（单位：rad&#x2F;V）。其时域表达式为：<br>[<br>s_{PM}(t) &#x3D; A_c \cos\left[\omega_c t + K_{PM} m(t)\right]<br>]</p>
+<p>\textbf{调频（FM）}：<br>瞬时频率偏移 (d\varphi(t)&#x2F;dt) 与调制信号 (m(t)) 成正比，即：<br>[<br>\frac{d\varphi(t)}{dt} &#x3D; K_{FM} m(t)<br>]<br>因此，瞬时相位偏移是调制信号的积分：<br>[<br>\varphi(t) &#x3D; K_{FM} \int m(t) dt<br>]<br>其中 (K_{FM}) 为调频灵敏度（单位：rad&#x2F;(V(\cdot)s) 或 Hz&#x2F;V）。其时域表达式为：<br>[<br>s_{FM}(t) &#x3D; A_c \cos\left[\omega_c t + K_{FM} \int m(t) dt \right]<br>]</p>
+<p>\subsection{波形相似性与相互转化}<br>如果是\textbf{单音信号} (m(t) &#x3D; A_m \cos \omega_m t) 作为调制信号，由于 (\int m(t) dt &#x3D; \frac{A_m}{\omega_m} \sin \omega_m t)，最终 FM 和 PM 的波形都会表现为一个标准的调角正弦波。<br>\textbf{注意}：如果未预先设定调制信号 (m(t)) 的真值，单凭波形根本无法判定它是调频波还是调相波。</p>
+<p>\textbf{相互转化关系}：<br>\begin{itemize}<br>    \item \textbf{直接调频}：使用压控振荡器（VCO）直接控制载波频率。<br>    \item \textbf{间接调频（阿姆斯特朗法）}：调制信号先通过\textbf{积分器}，再送入 \textbf{PM 调制器}，输出即为 FM 信号。<br>    \item \textbf{间接调相}：调制信号先通过\textbf{微分器}，再送入 \textbf{FM 调制器}，输出即为 PM 信号。<br>\end{itemize}</p>
+<p>\section{单音调制与关键参数}<br>假设调制信号为标准的单音信号 (m(t) &#x3D; A_m \cos \omega_m t)。</p>
+<p>\subsection{调频（FM）参数}<br>单音调频波的时域表达式为：<br>[<br>s_{FM}(t) &#x3D; A_c \cos\left[\omega_c t + m_f \sin \omega_m t \right]<br>]<br>其中，(m_f) 为\textbf{调频指数}（代表最大相位偏移）：<br>[<br>m_f &#x3D; \frac{K_{FM} A_m}{\omega_m} &#x3D; \frac{\Delta f_{FM}}{f_m}<br>]<br>\textbf{特征}：对于调频波，最大频偏 (\Delta f_{FM}) 由调制信号幅度决定（与 (f_m) 无关）；而调频指数 (m_f) 与调制信号频率 (f_m) \textbf{成反比}。频率越低，相位积累越大。</p>
+<p>\subsection{调相（PM）参数}<br>单音调相波的时域表达式为：<br>[<br>s_{PM}(t) &#x3D; A_c \cos\left[\omega_c t + m_p \cos \omega_m t \right]<br>]<br>其中，(m_p) 为\textbf{调相指数}：<br>[<br>m_p &#x3D; K_{PM} A_m &#x3D; \frac{\Delta f_{PM}}{f_m}<br>]<br>\textbf{特征}：调相指数 (m_p) 仅由调制信号幅度 (A_m) 决定，与调制信号频率 (f_m) \textbf{无关}。</p>
+<p>\subsection{例题解析（求调制信号）}<br>已知某调角波表达式 (s_{角}(t) &#x3D; A_c \cos\left[ \omega_c t + \varphi(t) \right])，要求解调制信号 (m(t))：<br>\begin{itemize}<br>    \item \textbf{若是 PM 波}：相位偏移 (\varphi(t)) 就是 (K_{PM} m(t))，直接 (\varphi(t) &#x2F; K_{PM}) 即可得到调制信号。<br>    \item \textbf{若是 FM 波}：对瞬时相位 (\varphi(t)) 求导得到角频率偏移：(\frac{d\varphi(t)}{dt} &#x3D; K_{FM} m(t))，故 (m(t) &#x3D; \frac{1}{K_{FM}} \cdot \frac{d\varphi(t)}{dt})。<br>\end{itemize}</p>
+<p>\section{窄带角度调制（窄带调角）}</p>
+<p>\subsection{前提条件}<br>当最大瞬时相位偏移满足条件 (|\varphi(t)| \ll 1)（通常指小于 0.5 弧度或 30(^\circ)）时，称为窄带调角（NBFM&#x2F;NBPM）。</p>
+<p>\subsection{数学近似}<br>利用微积分中的小角度近似展开：<br>[<br>\cos \varphi(t) \approx 1, \qquad \sin \varphi(t) \approx \varphi(t)<br>]</p>
+<p>\subsection{时域表达式与 AM 的区别}<br>以窄带调频（NBFM）为例，代入近似公式：<br>\begin{align*}<br>s_{NBFM}(t) &amp;&#x3D; A_c \cos\left[ \omega_c t + \varphi(t) \right] \<br>            &amp;&#x3D; A_c \cos \omega_c t \cos \varphi(t) - A_c \sin \omega_c t \sin \varphi(t) \<br>            &amp;\approx A_c \cos \omega_c t - A_c \varphi(t) \sin \omega_c t \<br>            &amp;\approx A_c \cos \omega_c t - A_c K_{FM} \left[ \int m(t) dt \right] \sin \omega_c t<br>\end{align*}<br>其频谱结构通常与普通调幅（AM）信号带宽相同。<br>\textbf{关键区别}：窄带调角中，载波项 (\cos \omega_c t) 与边带项 (\sin \omega_c t) 是\textbf{正交}的（相位差 (90^\circ)）；而 AM 信号中载波项与边带项是\textbf{同相}的。</p>
+<p>\subsection{实际应用}<br>窄带调角主要应用于\textbf{阿姆斯特朗（Armstrong）间接调频法}：先产生一个 NBFM 信号，然后通过\textbf{倍频器}将相位偏移（即调频指数）成倍放大，从而获得宽带调频（WBFM）信号。</p>
+<p>\section{包络检波器的门限效应}<br>这是模拟通信中\textbf{非相干解调}（即包络检波）存在的一个固有缺陷。</p>
+<p>\subsection{现象描述}<br>\begin{itemize}<br>    \item \textbf{大信噪比时}：输入信噪比高，包络检波输出信噪比与输入信噪比近似成线性关系。<br>    \item \textbf{小信噪比时（门限效应）}：当输入信噪比下降到某一特定数值（门限值）以下时，包络检波的输出信噪比会\textbf{急剧恶化}，下降速度远大于输入信噪比的下降速度。这种现象称为“门限效应”。<br>\end{itemize}</p>
+<p>\subsection{原理推导}<br>当输入噪声强度很大，满足条件 (A_0 + m(t) \ll n_i(t))（(n_i(t)) 为输入噪声包络）时，包络检波器提取出来的合成包络 $\rho(t)$ 近似为：<br>[<br>\rho(t) \approx \sqrt{n_c^2(t) + n_s^2(t)} + \frac{n_c(t)}{\sqrt{n_c^2(t) + n_s^2(t)}} m(t) + \dots<br>]<br>此公式表明，当噪声占据主导时，信号 (m(t)) 与噪声混乱叠加，无法从包络中分离出原始调制信号，导致信噪比急剧恶化。</p>
+<p>\subsection{与相干解调的对比}<br>\begin{itemize}<br>    \item \textbf{相干解调（同步检波）不存在门限效应}。它是线性运算，输入信噪比再低，输出信噪比依然会成比例跟随下降（直到信号微弱到无法辨认，但不会急剧恶化）。<br>    \item 因此，\textbf{DSB（双边带）、SSB（单边带）、VSB（残留边带）}这类抑制载波的调幅信号，其包络与调制信号 (m(t)) 并不成正比。在接收端需要采用\textbf{插入强载波法}（插入足够大的载波，使其变为类似 AM 信号），才能使用包络检波器进行解调。<br>\end{itemize}</p>
+<p>\end{document}</p>
 
                 
               </div>
@@ -452,7 +423,7 @@
     
       <span class="category-chain">
         
-  <a href="/categories/GPU%E8%B0%83%E5%BA%A6/" class="category-chain-item">GPU调度</a>
+  <a href="/categories/11/" class="category-chain-item">11</a>
   
   
 
@@ -467,11 +438,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/GPU%E8%B0%83%E5%BA%A6/" class="print-no-link">#GPU调度</a>
-      
-        <a href="/tags/NCCL/" class="print-no-link">#NCCL</a>
-      
-        <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" class="print-no-link">#分布式</a>
+        <a href="/tags/11/" class="print-no-link">#11</a>
       
     </div>
   
@@ -483,8 +450,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>多 GPU 并行调度与 NCCL 通信</div>
-      <div>https://cinebee111lagom.github.io/2026/08/12/多GPU并行调度与NCCL通信/</div>
+      <div>11</div>
+      <div>https://cinebee111lagom.github.io/2026/08/12/11/</div>
     </div>
     <div class="license-meta">
       
@@ -528,18 +495,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2026/08/12/vGPU%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96GPU%E8%B0%83%E5%BA%A6/" title="vGPU 与虚拟化场景下的 GPU 调度">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">vGPU 与虚拟化场景下的 GPU 调度</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2026/08/12/%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81%E4%B8%AD%E7%9A%84GPU%E8%B0%83%E5%BA%A6%E5%AE%9E%E8%B7%B5/" title="视频编解码中的 GPU 调度实践">
-                        <span class="hidden-mobile">视频编解码中的 GPU 调度实践</span>
+                      <a href="/2026/08/12/GPU%E8%B0%83%E5%BA%A6%E7%9B%91%E6%8E%A7%E4%B8%8E%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%AE%9E%E6%88%98/" title="GPU 调度监控与性能调优实战">
+                        <span class="hidden-mobile">GPU 调度监控与性能调优实战</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
