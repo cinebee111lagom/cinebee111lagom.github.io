@@ -59,7 +59,7 @@ function newPost() {
   setStatus('新建文章 — 填写后点击保存');
 }
 
-async function savePost() {
+async function savePost(silent = false) {
   const payload = {
     title: $('title').value.trim(),
     tags: splitCsv($('tags').value),
@@ -67,8 +67,8 @@ async function savePost() {
     body: $('body').value,
   };
   if (!payload.title || !payload.body) {
-    setStatus('标题和正文不能为空', 'error');
-    return;
+    if (!silent) setStatus('标题和正文不能为空', 'error');
+    return false;
   }
 
   let res;
@@ -88,16 +88,30 @@ async function savePost() {
 
   const data = await res.json();
   if (!res.ok) {
-    setStatus(data.error || '保存失败', 'error');
-    return;
+    if (!silent) setStatus(data.error || '保存失败', 'error');
+    return false;
   }
   currentFilename = data.filename;
   $('commit-msg').value = `更新文章：${payload.title}`;
-  setStatus(`已保存：${data.filename}`, 'ok');
-  await loadPosts();
+  if (!silent) {
+    setStatus(`已保存：${data.filename}`, 'ok');
+    await loadPosts();
+  }
+  return true;
 }
 
 async function publish() {
+  const hasDraft = $('title').value.trim() && $('body').value.trim();
+  if (hasDraft) {
+    setStatus('正在保存…');
+    const saved = await savePost(true);
+    if (!saved) {
+      setStatus('请先填写标题和正文', 'error');
+      return;
+    }
+    await loadPosts();
+  }
+
   const msg = $('commit-msg').value.trim() || `更新文章：${$('title').value.trim()}`;
   setStatus('正在发布…');
   const res = await fetch('/api/publish', {
@@ -110,7 +124,11 @@ async function publish() {
     setStatus((data.error || '发布失败') + (data.detail ? `\n${data.detail}` : ''), 'error');
     return;
   }
-  setStatus(data.message || data.skipped ? '没有变更需要发布' : '发布成功', 'ok');
+  if (data.skipped) {
+    setStatus('没有变更需要发布：文章已与线上一致，或请先修改内容后再点发布', 'ok');
+    return;
+  }
+  setStatus(data.message || '发布成功', 'ok');
 }
 
 $('btn-new').addEventListener('click', newPost);
