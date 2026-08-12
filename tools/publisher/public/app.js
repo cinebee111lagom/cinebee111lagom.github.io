@@ -2,6 +2,10 @@ let currentFilename = null;
 
 const $ = (id) => document.getElementById(id);
 
+function updateDeleteButton() {
+  $('btn-delete').disabled = !currentFilename;
+}
+
 function splitCsv(str) {
   return str
     .split(/[,，]/)
@@ -46,6 +50,7 @@ async function openPost(filename, liEl) {
   document.querySelectorAll('.post-list li').forEach((el) => el.classList.remove('active'));
   if (liEl) liEl.classList.add('active');
   setStatus(`已加载：${filename}`);
+  updateDeleteButton();
 }
 
 function newPost() {
@@ -56,7 +61,8 @@ function newPost() {
   $('body').value = '';
   $('commit-msg').value = '';
   document.querySelectorAll('.post-list li').forEach((el) => el.classList.remove('active'));
-  setStatus('新建文章 — 填写后点击保存');
+  setStatus('新建文章 — 填写后点「保存」或「发布到 GitHub」');
+  updateDeleteButton();
 }
 
 async function savePost(silent = false) {
@@ -131,8 +137,49 @@ async function publish() {
   setStatus(data.message || '发布成功', 'ok');
 }
 
+async function deletePost() {
+  if (!currentFilename) {
+    setStatus('请先选择要删除的文章', 'error');
+    return;
+  }
+  const title = $('title').value.trim() || currentFilename;
+  if (!confirm(`确定删除「${title}」？\n删除后将自动推送到 GitHub。`)) {
+    return;
+  }
+
+  setStatus('正在删除…');
+  const res = await fetch(`/api/posts/${encodeURIComponent(currentFilename)}`, {
+    method: 'DELETE',
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    setStatus(data.error || '删除失败', 'error');
+    return;
+  }
+
+  const deletedTitle = title;
+  newPost();
+  await loadPosts();
+  $('commit-msg').value = `删除文章：${deletedTitle}`;
+
+  setStatus('正在同步到 GitHub…');
+  const pub = await fetch('/api/publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: $('commit-msg').value }),
+  });
+  const pubData = await pub.json();
+  if (!pub.ok) {
+    setStatus(`本地已删除，但发布失败：${pubData.error || pubData.detail || '未知错误'}`, 'error');
+    return;
+  }
+  setStatus(pubData.message || `已删除「${deletedTitle}」并推送到 GitHub`, 'ok');
+}
+
 $('btn-new').addEventListener('click', newPost);
-$('btn-save').addEventListener('click', savePost);
+$('btn-save').addEventListener('click', () => savePost());
+$('btn-delete').addEventListener('click', deletePost);
 $('btn-publish').addEventListener('click', publish);
 
 loadPosts();
+updateDeleteButton();

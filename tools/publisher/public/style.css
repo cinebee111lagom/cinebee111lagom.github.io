@@ -53,7 +53,17 @@ body {
   border: 1px solid #475569;
 }
 
-.btn:hover {
+.btn.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:not(:disabled):hover {
   filter: brightness(1.08);
 }
 

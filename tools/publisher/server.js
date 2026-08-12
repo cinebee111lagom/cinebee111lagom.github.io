@@ -145,6 +145,19 @@ app.put('/api/posts/:filename', (req, res) => {
   res.json({ ok: true, filename });
 });
 
+app.delete('/api/posts/:filename', (req, res) => {
+  const filename = safeFilename(req.params.filename);
+  if (!filename.endsWith('.md')) {
+    return res.status(400).json({ error: '无效的文件名' });
+  }
+  const full = path.join(POSTS_DIR, filename);
+  if (!full.startsWith(POSTS_DIR) || !fs.existsSync(full)) {
+    return res.status(404).json({ error: '文章不存在' });
+  }
+  fs.unlinkSync(full);
+  res.json({ ok: true, filename });
+});
+
 app.post('/api/publish', (req, res) => {
   const message = (req.body.message || '更新博客文章').trim();
   try {
