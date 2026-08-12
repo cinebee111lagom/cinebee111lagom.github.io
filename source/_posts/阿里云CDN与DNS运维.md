@@ -1,6 +1,6 @@
 ---
 title: 阿里云 CDN 与 DNS 运维
-date: 2026-08-26 12:30:00
+date: 2026-08-25 12:45:00
 tags:
   - 阿里云
   - CDN
@@ -9,75 +9,69 @@ categories:
   - 阿里云资源 SRE
 ---
 
-CDN 与 DNS 是用户访问入口，SRE 需保障解析正确、证书有效与回源健康。
+**CDN** 加速静态资源，**云解析 DNS / GTM** 负责流量调度与容灾切换。
+
+## CDN 架构
+
+```
+用户 → CDN 边缘节点 → 回源（OSS / SLB / 源站）
+```
+
+## 配置要点
+
+| 项 | 建议 |
+|----|------|
+| 缓存规则 | 静态长缓存，HTML 短缓存 |
+| HTTPS | 强制 HTTPS、HTTP/2 |
+| 回源 Host | 与源站 SNI 一致 |
+| 预热 | 大促前 URL 预热 |
+| 刷新 | 发布时目录/URL 刷新 |
+
+## 回源优化
+
+```
+OSS 回源：私有 Bucket + CDN 鉴权
+SLB 回源：仅 CDN 回源 IP 白名单
+```
 
 ## 云解析 DNS
 
 ```
-主域名：example.com
-  A/AAAA  → SLB/ALB（TTL 300）
-  CNAME   → CDN 域名
-  私有域： internal.example.com（VPC 内）
+A/AAAA/CNAME 记录
+TTL：生产 60~300s（便于切换）
+健康检查：HTTP/TCP 探测
 ```
 
-## 高可用 DNS
+## GTM（全局流量管理）
 
 ```
-DNS 负载均衡（权重/地域）
-健康检查：失败自动摘除
-多线路：电信/联通/移动（可选）
-```
-
-## CDN 配置
-
-```
-源站：OSS 或 SLB/ALB
-HTTPS：开启 HTTP/2
-缓存规则：
-  /static/*  缓存 30 天
-  /api/*     不缓存
-压缩：Gzip/Brotli
-```
-
-## 证书
-
-```
-CDN 托管证书 或 上传
-到期前 30 天告警
-Let's Encrypt 自动续期（Function Compute）
+多 Region / 多 SLB 智能调度
+故障转移：主不可用 → 备
+权重：灰度、A/B
 ```
 
 ## 监控
 
 | 指标 | 告警 |
 |------|------|
-| 回源 5xx 率 | P1 |
-| 带宽突增 | P2（攻击或热点） |
-| 命中率下降 | P2 |
+| 回源 5xx | > 1% |
+| 命中率 | < 85% 排查 |
+| 带宽 | 突增（攻击/热点） |
 
-## 安全
-
-```
-WAF 前置（可选）
-DDoS 高防（大促）
-Referer 防盗链
-URL 鉴权（敏感资源）
-```
-
-## 故障：CDN 回源失败
+## 故障 Runbook
 
 ```
-1. 源站 SLB 健康检查
-2. CDN 回源 Host 是否正确
-3. 源站安全组是否允许 CDN 回源 IP 段
-4. OSS Bucket 权限
+1. CDN 502 → 查回源 SLB/OSS 健康
+2. 全站不可达 → DNS 解析 + GTM 状态
+3. 缓存污染 → 刷新 + 版本号 query
 ```
 
 ## Checklist
 
-- [ ] DNS TTL 合理（切流 vs 缓存）
 - [ ] HTTPS 全站
-- [ ] 回源超时配置
-- [ ] 预热大促静态资源
+- [ ] 回源仅 CDN IP
+- [ ] 大促预热清单
+- [ ] GTM 健康检查
+- [ ] DNS TTL 与切换演练
 
-CDN/DNS 故障影响**全部用户**，变更需谨慎。
+CDN/DNS 是**用户入口第一层**，与 WAF、SLB 联动。

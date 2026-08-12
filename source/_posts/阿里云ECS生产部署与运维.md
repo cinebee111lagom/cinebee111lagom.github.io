@@ -1,6 +1,6 @@
 ---
 title: 阿里云 ECS 生产部署与运维
-date: 2026-08-26 09:30:00
+date: 2026-08-25 09:45:00
 tags:
   - 阿里云
   - ECS
@@ -8,72 +8,71 @@ categories:
   - 阿里云资源 SRE
 ---
 
-ECS 是阿里云最基础的计算资源，SRE 需规范规格、镜像、磁盘与高可用。
+ECS 是阿里云最基础的计算资源，SRE 需规范镜像、规格、部署与巡检。
 
-## 规格选型
+## 实例规格选型
 
-| 场景 | 规格族 |
-|------|--------|
-| 通用 Web | g8y（倚天）/ g7 |
-| 计算密集 | c7 |
-| 内存密集 | r7 |
-| GPU | gn7 / gn6v |
+| 系列 | 场景 |
+|------|------|
+| g8i | 通用均衡 |
+| c8i | 计算密集 |
+| r8i | 内存密集 |
+| gn7/gn8 | GPU 训练/推理 |
 
-```
-4C8G 起步 Web
-8C16G 中等应用
-按 CloudMonitor CPU/内存 P95 扩缩
-```
-
-## 系统盘与数据盘
-
-```
-系统盘：ESSD PL0/PL1，≥ 40GB
-数据盘：ESSD PL1/PL2，独立挂载 /data
-禁止业务数据仅放系统盘
-```
-
-```bash
-# 数据盘格式化挂载
-mkfs.ext4 /dev/vdb
-mkdir /data
-echo '/dev/vdb /data ext4 defaults 0 0' >> /etc/fstab
-```
+生产推荐 **按量+预留实例券** 混合降本。
 
 ## 镜像与初始化
 
-- 使用**自定义镜像**或 Alibaba Cloud Linux 3
-- 用户数据 cloud-init 统一初始化：
+```bash
+# 使用官方 Alibaba Cloud Linux 3 / Ubuntu 22.04
+# 自定义镜像：cloud-init + 安全基线
+
+#!/bin/bash
+# user-data 示例
+yum update -y
+systemctl enable chronyd && systemctl start chronyd
+# 安装监控 agent
+wget -O install.sh http://update.aegis.aliyun.com/download/install.sh
+bash install.sh
+```
+
+## 部署模式
+
+| 模式 | 说明 |
+|------|------|
+| 单实例 | 仅 dev |
+| 多实例 + SLB | 生产最小 HA |
+| 弹性伸缩 ESS | 自动扩缩 |
+| 部署集 | 物理分散，降 correlated failure |
+
+## 云盘
+
+| 类型 | 场景 |
+|------|------|
+| ESSD PL0/PL1 | 生产系统盘/数据盘 |
+| 快照 | 每日自动快照策略 |
+| 加密 | KMS 加密盘 |
+
+## 运维命令
 
 ```bash
-#!/bin/bash
-yum install -y node_exporter
-systemctl enable --now node_exporter
+# 阿里云 CLI
+aliyun ecs DescribeInstances --RegionId cn-hangzhou
+aliyun ecs RebootInstance --InstanceId i-xxx
+
+# 系统内
+df -h
+free -h
+journalctl -xe
 ```
 
-## 高可用
+## 检查清单
 
-```
-SLB/ALB → 多 ECS（跨 AZ）→ 无单点
-配合 ESS 弹性伸缩（最小 2 跨 AZ）
-```
+- [ ] 密钥对/密码合规，禁止密码登录（SSH Key）
+- [ ] 安全组最小放通
+- [ ] 云监控 agent 安装
+- [ ] 自动快照策略
+- [ ] 非 root 跑应用
+- [ ] 部署集（关键集群）
 
-## 运维要点
-
-| 项 | 实践 |
-|----|------|
-| 密钥对 | 禁止密码登录，RAM 跳板 |
-| 安全组 | 最小端口 |
-| 补丁 | OOS 批量打补丁 |
-| 释放保护 | 生产 ECS 开启 |
-| 快照 | 云盘自动快照策略 |
-
-## 常见问题
-
-| 问题 | 排查 |
-|------|------|
-| 磁盘满 | df -h，扩容云盘（在线） |
-| CPU 高 | top，是否需升规格或 HPA |
-| 网络不通 | 安全组、NACL、路由表 |
-
-ECS 是**自建中间件载体**，托管服务能替代则优先 RDS/Redis/ACK。
+**ECS 不落单 AZ 单实例**（生产）。
