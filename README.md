@@ -2,6 +2,17 @@
 
 基于 [Hexo](https://hexo.io/) 的个人博客源码，通过 GitHub Actions 自动构建并部署到 GitHub Pages。
 
+## 本地写作台（推荐）
+
+用 Web UI 写 Markdown，一键保存并发布：
+
+```bash
+npm run ui:setup   # 首次安装写作台依赖
+npm run ui         # 打开 http://localhost:3456
+```
+
+流程：**新建 → 写正文 → 保存 → 发布到 GitHub**。写作台源码在 `tools/publisher/`，运行时文件已加入 `.gitignore`。
+
 ## 本地开发
 
 ```bash
@@ -10,7 +21,7 @@ npm run server   # 预览 http://localhost:4000
 npm run build    # 生成静态文件到 public/
 ```
 
-## 发布文章
+## 手动发布文章
 
 ```bash
 npx hexo new post "文章标题"

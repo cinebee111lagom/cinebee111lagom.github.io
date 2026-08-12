@@ -6,7 +6,9 @@
     "build": "hexo generate",
     "clean": "hexo clean",
     "deploy": "hexo deploy",
-    "server": "hexo server"
+    "server": "hexo server",
+    "ui": "node tools/publisher/server.js",
+    "ui:setup": "cd tools/publisher && npm install"
   },
   "hexo": {
     "version": "8.1.2"
