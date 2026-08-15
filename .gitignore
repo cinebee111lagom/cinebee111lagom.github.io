@@ -7,13 +7,9 @@ node_modules/
 .deploy*/
 _multiconfig.yml
 
-# Obsidian 写作配置（不参与 Hexo 构建）
-source/_posts/.obsidian/
-
 # 本地写作台（Web UI）运行时文件
 tools/publisher/node_modules/
 tools/publisher/.env
 tools/publisher/.env.*
 tools/publisher/*.log
 tools/publisher/npm-debug.log*
-.crawl_cache/
