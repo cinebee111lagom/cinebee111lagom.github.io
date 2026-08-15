@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Batch crawl documentation URLs → Hexo markdown posts → ready for git push.
-Usage: python tools/crawl_docs_to_posts.py
+Batch crawl documentation URLs → Hexo markdown posts.
+
+Usage:
+  python tools/crawl_docs_to_posts.py tools/series/etcd_v37.json
+  python tools/crawl_docs_to_posts.py tools/series/dragonfly.json tools/series/keda.json tools/series/volcano.json
 """
 from __future__ import annotations
 
 import hashlib
 import json
 import re
+import sys
 import time
 from pathlib import Path
 from urllib.parse import urlparse
@@ -19,112 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POSTS = ROOT / "source" / "_posts"
 CACHE = ROOT / ".crawl_cache"
 CACHE.mkdir(exist_ok=True)
-
-CATEGORY = "etcd v3.7 文档导读"
-DATE = "2026-09-13"
-SERIES_PREFIX = "etcd-v37抓取"
-
-# Full URL list from user (etcd v3.7)
-URLS = [
-    "https://etcd.io/docs/v3.7/",
-    "https://etcd.io/docs/v3.7/quickstart/",
-    "https://etcd.io/docs/v3.7/install/",
-    "https://etcd.io/docs/v3.7/demo/",
-    "https://etcd.io/docs/v3.7/faq/",
-    "https://etcd.io/docs/v3.7/feature-gates/",
-    "https://etcd.io/docs/v3.7/integrations/",
-    "https://etcd.io/docs/v3.7/reporting_bugs/",
-    "https://etcd.io/docs/v3.7/tuning/",
-    "https://etcd.io/docs/v3.7/tasks/",
-    "https://etcd.io/docs/v3.7/tasks/operator/",
-    "https://etcd.io/docs/v3.7/tasks/operator/how-to-setup-cluster/",
-    "https://etcd.io/docs/v3.7/tasks/operator/how-to-conduct-elections/",
-    "https://etcd.io/docs/v3.7/tasks/operator/how-to-check-cluster-status/",
-    "https://etcd.io/docs/v3.7/tasks/operator/how-to-save-database/",
-    "https://etcd.io/docs/v3.7/tasks/operator/how-to-deal-with-membership/",
-    "https://etcd.io/docs/v3.7/tasks/developer/",
-    "https://etcd.io/docs/v3.7/tasks/developer/reading-from-etcd/",
-    "https://etcd.io/docs/v3.7/tasks/developer/writing-to-etcd/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-get-key-by-prefix/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-delete-keys/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-transactional-write/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-watch-keys/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-create-lease/",
-    "https://etcd.io/docs/v3.7/tasks/developer/how-to-create-locks/",
-    "https://etcd.io/docs/v3.7/op-guide/",
-    "https://etcd.io/docs/v3.7/op-guide/authentication/",
-    "https://etcd.io/docs/v3.7/op-guide/authentication/authentication/",
-    "https://etcd.io/docs/v3.7/op-guide/authentication/rbac/",
-    "https://etcd.io/docs/v3.7/op-guide/configuration/",
-    "https://etcd.io/docs/v3.7/op-guide/security/",
-    "https://etcd.io/docs/v3.7/op-guide/clustering/",
-    "https://etcd.io/docs/v3.7/op-guide/kubernetes/",
-    "https://etcd.io/docs/v3.7/op-guide/container/",
-    "https://etcd.io/docs/v3.7/op-guide/failures/",
-    "https://etcd.io/docs/v3.7/op-guide/recovery/",
-    "https://etcd.io/docs/v3.7/op-guide/gateway/",
-    "https://etcd.io/docs/v3.7/op-guide/grpc_proxy/",
-    "https://etcd.io/docs/v3.7/op-guide/hardware/",
-    "https://etcd.io/docs/v3.7/op-guide/maintenance/",
-    "https://etcd.io/docs/v3.7/op-guide/monitoring/",
-    "https://etcd.io/docs/v3.7/op-guide/performance/",
-    "https://etcd.io/docs/v3.7/op-guide/runtime-reconf-design/",
-    "https://etcd.io/docs/v3.7/op-guide/runtime-configuration/",
-    "https://etcd.io/docs/v3.7/op-guide/supported-platform/",
-    "https://etcd.io/docs/v3.7/op-guide/versioning/",
-    "https://etcd.io/docs/v3.7/op-guide/data_corruption/",
-    "https://etcd.io/docs/v3.7/dev-guide/",
-    "https://etcd.io/docs/v3.7/dev-guide/discovery_protocol/",
-    "https://etcd.io/docs/v3.7/dev-guide/local_cluster/",
-    "https://etcd.io/docs/v3.7/dev-guide/interacting_v3/",
-    "https://etcd.io/docs/v3.7/dev-guide/api_grpc_gateway/",
-    "https://etcd.io/docs/v3.7/dev-guide/grpc_naming/",
-    "https://etcd.io/docs/v3.7/dev-guide/golang_embed_pkg/",
-    "https://etcd.io/docs/v3.7/dev-guide/limit/",
-    "https://etcd.io/docs/v3.7/dev-guide/features/",
-    "https://etcd.io/docs/v3.7/dev-guide/api_reference_v3/",
-    "https://etcd.io/docs/v3.7/dev-guide/api_concurrency_reference_v3/",
-    "https://etcd.io/docs/v3.7/learning/",
-    "https://etcd.io/docs/v3.7/learning/data_model/",
-    "https://etcd.io/docs/v3.7/learning/design-client/",
-    "https://etcd.io/docs/v3.7/learning/design-learner/",
-    "https://etcd.io/docs/v3.7/learning/design-auth-v3/",
-    "https://etcd.io/docs/v3.7/learning/api/",
-    "https://etcd.io/docs/v3.7/learning/persistent-storage-files/",
-    "https://etcd.io/docs/v3.7/learning/api_guarantees/",
-    "https://etcd.io/docs/v3.7/learning/why/",
-    "https://etcd.io/docs/v3.7/learning/glossary/",
-    "https://etcd.io/docs/v3.7/upgrades/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrading-etcd/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_0/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_1/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_2/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_3/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_4/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_5/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_6/",
-    "https://etcd.io/docs/v3.7/upgrades/upgrade_3_7/",
-    "https://etcd.io/docs/v3.7/downgrades/",
-    "https://etcd.io/docs/v3.7/downgrades/downgrading-etcd/",
-    "https://etcd.io/docs/v3.7/downgrades/downgrade_3_5/",
-    "https://etcd.io/docs/v3.7/downgrades/downgrade_3_6/",
-    "https://etcd.io/docs/v3.7/downgrades/downgrade_3_7/",
-    "https://etcd.io/docs/v3.7/benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-2-1-0-alpha-benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-2-2-0-benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-2-2-0-rc-benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-2-2-0-rc-memory-benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-3-demo-benchmarks/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-3-watch-memory-benchmark/",
-    "https://etcd.io/docs/v3.7/benchmarks/etcd-storage-memory-benchmark/",
-    "https://etcd.io/docs/v3.7/metrics/",
-    "https://etcd.io/docs/v3.7/triage/",
-    "https://etcd.io/docs/v3.7/triage/issues/",
-    "https://etcd.io/docs/v3.7/triage/PRs/",
-    "https://etcd.io/docs/v3.7/dev-internal/discovery_protocol/",
-    "https://etcd.io/docs/v3.7/dev-internal/logging/",
-    "https://etcd.io/docs/v3.7/dev-internal/modules/",
-]
+POSTS.mkdir(parents=True, exist_ok=True)
 
 
 def cache_path(url: str) -> Path:
@@ -140,65 +39,63 @@ def fetch(url: str, client: httpx.Client) -> dict:
     r.raise_for_status()
     data = {"url": url, "status": r.status_code, "html": r.text}
     cp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    time.sleep(0.35)
+    time.sleep(0.3)
     return data
 
 
 def extract(html: str, url: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
+    for tag in soup(["script", "style", "nav", "footer", "header", "noscript", "aside"]):
         tag.decompose()
-    # etcd docs: main content often in article / td-content / main
     main = (
         soup.select_one("article")
         or soup.select_one(".td-content")
+        or soup.select_one(".theme-doc-markdown")
+        or soup.select_one(".markdown")
         or soup.select_one("main")
         or soup.select_one("#content")
+        or soup.select_one(".content")
         or soup.body
     )
     title = ""
-    h1 = main.find("h1") if main else None
-    if h1:
-        title = h1.get_text(" ", strip=True)
-    if not title and soup.title:
-        title = soup.title.get_text(" ", strip=True).split("|")[0].strip()
-    # remove feedback widgets
     if main:
-        for bad in main.select(".feedback, .td-page-meta, .edit-meta"):
+        h1 = main.find("h1")
+        if h1:
+            title = h1.get_text(" ", strip=True)
+    if not title and soup.title:
+        title = soup.title.get_text(" ", strip=True)
+        for sep in ("|", "·", "-"):
+            if sep in title:
+                title = title.split(sep)[0].strip()
+                break
+    if main:
+        for bad in main.select(
+            ".feedback, .td-page-meta, .edit-meta, .pagination-nav, .theme-doc-footer, .hash-link"
+        ):
             bad.decompose()
     lines = []
     if not main:
-        return {"title": title or url, "sections": [], "text": ""}
-    for el in main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "code", "td", "th"]):
+        return {"title": title or url, "markdown": ""}
+    for el in main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre"]):
         name = el.name
         text = el.get_text("\n", strip=True)
         if not text or len(text) < 2:
             continue
-        if name in ("h1", "h2", "h3", "h4"):
-            level = int(name[1])
-            lines.append(("h", level, text))
-        elif name == "pre" or (name == "code" and el.parent and el.parent.name == "pre"):
-            if name == "code" and el.parent.name == "pre":
-                continue
-            lines.append(("code", 0, text))
-        elif name in ("td", "th"):
-            continue  # tables handled loosely via p/li; skip cell noise
+        if name.startswith("h"):
+            lines.append(("h", int(name[1]), text))
+        elif name == "pre":
+            lines.append(("code", 0, text[:8000]))
         else:
-            if len(text) > 2000:
-                text = text[:2000] + "…"
+            if len(text) > 2500:
+                text = text[:2500] + "…"
             lines.append(("p", 0, text))
-    # dedupe consecutive identical
-    out = []
-    prev = None
+    out, prev = [], None
     for item in lines:
         if item == prev:
             continue
         out.append(item)
         prev = item
-    # build markdown body (cap size)
-    md_parts = []
-    chars = 0
-    max_chars = 12000
+    md_parts, chars, max_chars = [], 0, 12000
     for kind, level, text in out:
         if kind == "h" and level == 1:
             continue
@@ -213,46 +110,46 @@ def extract(html: str, url: str) -> dict:
             break
         md_parts.append(chunk)
         chars += len(chunk)
-    return {"title": title or url, "markdown": "".join(md_parts).strip(), "url": url}
+    return {"title": title or url, "markdown": "".join(md_parts).strip()}
 
 
-def slug_from_url(url: str) -> str:
+def slug_from_url(url: str, strip_prefixes: list[str]) -> str:
     path = urlparse(url).path.rstrip("/")
-    parts = [p for p in path.split("/") if p and p != "docs" and p != "v3.7"]
+    parts = [p for p in path.split("/") if p]
+    for pref in strip_prefixes:
+        pref_parts = [x for x in pref.strip("/").split("/") if x]
+        if parts[: len(pref_parts)] == pref_parts:
+            parts = parts[len(pref_parts) :]
+            break
     if not parts:
         return "index"
     s = "-".join(parts)
-    s = re.sub(r"[^a-zA-Z0-9\-_]+", "-", s)
-    return s[:80]
+    s = re.sub(r"[^a-zA-Z0-9\-_\u4e00-\u9fff]+", "-", s)
+    return s[:100] or "index"
 
 
-def cn_title(en_title: str, slug: str) -> str:
-    base = en_title.replace(" | etcd", "").strip()
-    return f"etcd v3.7 抓取：{base}"
-
-
-def write_post(idx: int, meta: dict) -> Path:
-    slug = slug_from_url(meta["url"])
-    fn = f"{SERIES_PREFIX}-{slug}.md"
-    title = cn_title(meta["title"], slug)
-    hh = 9 + idx // 60
-    mm = idx % 60
+def write_post(cfg: dict, idx: int, url: str, meta: dict) -> Path:
+    strip = cfg.get("strip_path_prefixes", [])
+    slug = slug_from_url(url, strip)
+    prefix = cfg["series_prefix"]
+    fn = f"{prefix}-{slug}.md"
+    en = meta["title"]
+    title = f"{cfg['title_prefix']}{en}"
+    date = cfg.get("date", "2026-09-14")
+    hh, mm = 9 + idx // 60, idx % 60
     body = meta["markdown"] or "（页面无可提取正文，请直接打开官方链接。）"
-    # light Chinese framing
     content = f"""---
 title: {title}
-date: {DATE} {hh:02d}:{mm:02d}:00
+date: {date} {hh:02d}:{mm:02d}:00
 tags:
-  - etcd
-  - 抓取
-  - 文档
+{chr(10).join('  - ' + t for t in cfg.get('tags', ['文档', '抓取']))}
 categories:
-  - {CATEGORY}
+  - {cfg['category']}
 ---
 
-本文由批量爬取 [etcd v3.7 文档]({meta['url']}) 自动生成，保留原文结构要点，便于检索与对照。
+本文由批量爬取官方文档自动生成，保留原文结构要点，便于检索与对照。
 
-**来源**：<{meta['url']}>
+**来源**：<{url}>
 
 ---
 
@@ -260,40 +157,53 @@ categories:
 
 ---
 
-> 完整与最新内容以官方文档为准：[{meta['title']}]({meta['url']})
+> 完整与最新内容以官方文档为准：[{en}]({url})
 """
     path = POSTS / fn
     path.write_text(content, encoding="utf-8")
     return path
 
 
-def main():
-    POSTS.mkdir(parents=True, exist_ok=True)
+def crawl_series(cfg_path: Path) -> dict:
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    urls = cfg["urls"]
     ok, fail = 0, []
-    results = []
     headers = {
-        "User-Agent": "blog-doc-crawler/1.0 (+local hexo; respectful crawl)",
+        "User-Agent": "blog-doc-crawler/1.1 (+local hexo; respectful crawl)",
         "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     }
+    print(f"\n=== {cfg_path.name}: {len(urls)} urls ===")
     with httpx.Client(timeout=45.0, headers=headers) as client:
-        for i, url in enumerate(URLS):
+        for i, url in enumerate(urls):
             try:
                 raw = fetch(url, client)
                 meta = extract(raw["html"], url)
-                meta["url"] = url
-                results.append(meta)
-                path = write_post(i, meta)
-                print(f"OK [{i+1}/{len(URLS)}] {path.name} <- {url}")
+                path = write_post(cfg, i, url, meta)
+                print(f"OK [{i+1}/{len(urls)}] {path.name}")
                 ok += 1
             except Exception as e:
                 print(f"FAIL {url}: {e}")
                 fail.append({"url": url, "error": str(e)})
-    report = {"ok": ok, "fail": fail, "total": len(URLS)}
-    (CACHE / "last_report.json").write_text(
+    report = {"series": cfg_path.name, "ok": ok, "fail": fail, "total": len(urls)}
+    (CACHE / f"report_{cfg_path.stem}.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    print(json.dumps(report, ensure_ascii=False))
+    return report
+
+
+def main(argv: list[str]) -> None:
+    if len(argv) < 2:
+        print(__doc__)
+        sys.exit(2)
+    reports = []
+    for arg in argv[1:]:
+        p = Path(arg)
+        if not p.is_absolute():
+            p = ROOT / p
+        reports.append(crawl_series(p))
+    print(json.dumps(reports, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
