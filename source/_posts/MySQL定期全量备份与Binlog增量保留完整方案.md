@@ -1,5 +1,5 @@
 ---
-title: MySQL 定期全量备份 + Binlog 增量保留完整方案
+title: MySQL 定期全量备份与Binlog增量保留完整方案
 date: 2026-09-07 23:45:00
 tags:
   - MySQL
